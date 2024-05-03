@@ -1,17 +1,16 @@
-# UserManagement/urls.py
 from django.urls import path, include
 from django.contrib.auth.views import LogoutView
-
-from UserManagement.views import FriendshipViewSet
+from django.conf import settings
+from django.conf.urls.static import static
 from . import views
-from .views import CustomLogoutView
-from .views import add_pet, delete_pet
+from .views import CustomLogoutView, add_pet, delete_pet, edit_pet_profile
 from rest_framework.routers import DefaultRouter
 from .views import CustomUserViewSet
-
+from .views import search_profile
 router = DefaultRouter()
 router.register('users', CustomUserViewSet)
-router.register(r'friendships', FriendshipViewSet, basename='friendship')
+router.register(r'friendships', views.FriendshipViewSet, basename='friendship')
+
 app_name = 'UserManagement'
 
 urlpatterns = [
@@ -28,6 +27,9 @@ urlpatterns = [
     path('search/', views.search, name='search'),
     path('complete/', views.user_completion, name='user_completion'),
     path('add_pet/', add_pet, name='add_pet'),
-    path('delete_pet/', delete_pet, name='delete_pet'),
-    path('edit_pet/<slug:pet_slug>/', views.edit_pet_profile, name='edit_pet_profile'),
-]
+    path('delete_pet/<int:pet_id>/', views.delete_pet, name='delete_pet'),
+    path('edit_pet_profile/<slug:pet_slug>/', views.edit_pet_profile, name='edit_pet_profile'),
+    path('pet_management/', include('PetManagement.urls')),  # Include PetManagement URLs
+    path('search_profile/', views.search_profile, name='search_profile'),
+
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

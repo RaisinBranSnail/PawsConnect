@@ -1,5 +1,6 @@
 import logging
-
+from django.db import IntegrityError
+from django.urls import reverse
 from allauth.account.views import LogoutView
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
@@ -20,6 +21,11 @@ from .forms import CustomLoginForm, EditProfileForm, UserCompletionForm, PetForm
 from .models import CustomUser, Photo, Friendship
 from .serializers import CustomUserSerializer, FriendshipSerializer
 from .utils import search_pets, search_users
+from django.http import HttpResponseNotAllowed
+from django.shortcuts import redirect, get_object_or_404
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
@@ -92,13 +98,19 @@ def add_pet(request):
             pet = form.save(commit=False)
             pet.owner = request.user
             pet.save()
-            PetProfile.objects.create(pet=pet)
-            return JsonResponse({'success': True, 'message': f'{pet.name} successfully added.'})
+
+            # Save the profile picture to the pet's profile
+            profile_picture = form.cleaned_data.get('profile_picture')
+            pet_profile, created = PetProfile.objects.get_or_create(pet=pet)
+            pet_profile.profile_picture = profile_picture
+            pet_profile.save()
+
+            return redirect('UserManagement:pets')  # Redirect to the pets page
         else:
             return JsonResponse({'success': False, 'errors': form.errors}, status=400)
     else:
-        return JsonResponse({'success': False, 'message': 'Invalid request'}, status=405)
-
+        form = PetForm()
+        return render(request, 'UserManagement/add_pet.html', {'form': form})
 
 class CustomLogoutView(LogoutView):
     next_page = reverse_lazy('UserManagement:login')
@@ -275,13 +287,51 @@ class FriendshipViewSet(viewsets.ModelViewSet):
         return super().update(request, *args, **kwargs)
 
 
+
 @login_required
-def delete_pet(request):
-    if request.method == 'POST' and 'pet_id' in request.POST:
+def delete_pet(request, pet_id):
+    pet = get_object_or_404(Pet, id=pet_id, owner=request.user)
+
+    if request.method == 'POST':
+        pet.delete()
+        return redirect('UserManagement:pets')
+    else:
+        return render(request, 'UserManagement/delete_pet.html', {'pet': pet})
+
+
+@login_required
+def search_profile(request):
+    username = request.GET.get('username', None)
+    if username:
         try:
-            pet = Pet.objects.get(id=request.POST['pet_id'], owner=request.user)
-            pet.delete()
-            return JsonResponse({'success': True, 'message': 'Pet successfully deleted.'})
-        except Pet.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Pet not found'}, status=404)
-    return JsonResponse({'success': False, 'message': 'Invalid request'}, status=405)
+            user = User.objects.get(username=username)
+            return JsonResponse({
+                'success': True,
+                'user_id': user.id,
+                'username': user.username,
+                'profile_info': user.profile.about_me  # Corrected to use 'about_me'
+            })
+        except User.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'User not found'}, status=404)
+    return JsonResponse({'success': False, 'message': 'No username provided'}, status=400)
+@login_required
+def transfer_pet(request, pet_id):
+    pet = get_object_or_404(Pet, id=pet_id, owner=request.user)
+    if request.method == 'POST':
+        form = TransferPetForm(request.POST)
+        if form.is_valid():
+            transfer_request = form.save(commit=False)
+            transfer_request.pet = pet
+            transfer_request.from_user = request.user
+            # Setting the to_user from the form
+            transfer_request.to_user = form.cleaned_data['to_user']
+            transfer_request.save()
+            # Updating the pet's owner
+            pet.owner = transfer_request.to_user
+            pet.save()
+            return redirect('UserManagement:pets')
+    else:
+        form = TransferPetForm()
+
+    return render(request, 'UserManagement/transfer_pet.html', {'form': form, 'pet': pet})
+

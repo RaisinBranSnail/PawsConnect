@@ -9,6 +9,64 @@
         border-top: 3px dotted darkblue;
         border-radius: 5px;
     }
+
+    .card {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        transition: 0.3s;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .card:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        transform: translateY(-5px);
+    }
+
+    .card-img-top {
+        object-fit: cover;
+        height: 200px;
+    }
+
+    .card-body {
+        padding: 16px;
+    }
+
+    .card-title {
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    .btn-edit {
+        background-color: #4CAF50;
+        color: white;
+    }
+
+    .btn-delete {
+        background-color: #f44336;
+        color: white;
+    }
+
+    .btn-transfer {
+        background-color: #008CBA;
+        color: white;
+    }
+
+    .btn-edit:hover,
+    .btn-delete:hover,
+    .btn-transfer:hover {
+        opacity: 0.8;
+    }
+
 </style>
 
 <h1 style="text-align: center;">{{ user.username }}'s Pets</h1>
@@ -16,23 +74,32 @@
 
 <div class="container mt-5">
     <div class="row">
-        {% if user.pets.all %}
-            {% for pet in user.pets.all %}
+        {% if user_pets %}
+            {% for pet in user_pets %}
                 <div class="col-md-4 mb-4">
                     <div class="card">
-                        {% if pet.profile_picture %}
-                            <img src="{{ pet.profile_picture.url }}" class="card-img-top" alt="{{ pet.name }}">
+                        {% if pet.profile and pet.profile.profile_picture %}
+                            <img src="{{ pet.profile.profile_picture.url }}" class="card-img-top" alt="{{ pet.name }}">
                         {% else %}
-                            <!-- Placeholder image if no profile picture is set -->
+                            <img src="placeholder_image_url" class="card-img-top" alt="No profile picture available">
                         {% endif %}
 
                         <div class="card-body">
                             <h5 class="card-title">{{ pet.name }}</h5>
                             <p class="card-text">Age: {{ pet.age }}</p>
                             <p class="card-text">Owner: {{ user.username }}</p>
-                            <a href="{% url 'UserManagement:pet_profile' pet.slug %}" class="btn btn-primary">View Profile</a>
-                            <a href="{% url 'UserManagement:delete_pet' pet.id %}" class="btn btn-danger">Delete</a>
                         </div>
+
+                        <div class="card-footer">
+                            <div class="btn-group">
+                                <a href="{% url 'UserManagement:edit_pet_profile' pet.slug %}" class="btn btn-edit">Edit</a>
+                                <form method="GET" action="{% url 'UserManagement:delete_pet' pet_id=pet.id %}">
+                                    <button type="submit" class="btn btn-delete">Delete</button>
+                                </form>
+                                <a href="{% url 'PetManagement:transfer_pet' pet.id %}" class="btn btn-transfer">Transfer</a>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             {% endfor %}
@@ -52,7 +119,7 @@
     <div class="row justify-content-center">
         <div class="col-md-4 text-center">
             <a href="{% url 'UserManagement:add_pet' %}" class="btn btn-success">Add Pet</a>
-            <a href="/user/profile/" class="btn btn-primary">Back to Profile</a>
+            <a href="{% url 'UserManagement:profile' slug=user.slug %}" class="btn btn-primary">Back to Profile</a>
         </div>
     </div>
 </div>

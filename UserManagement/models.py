@@ -89,6 +89,7 @@ class CustomUser(AbstractUser):
 
 class UserProfile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='profile')
+
     location = models.CharField(max_length=100, blank=True)
     friends = models.ManyToManyField('self', symmetrical=False, related_name='user_friends', blank=True)
     about_me = models.TextField(_("about me"), blank=True, max_length=500, null=True)

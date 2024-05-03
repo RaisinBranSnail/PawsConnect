@@ -1,6 +1,8 @@
 from django import forms
 from django.forms import inlineformset_factory
 from .models import Pet
+from .models import PetTransferRequest
+from UserManagement.models import CustomUser
 
 
 class PetForm(forms.ModelForm):
@@ -26,3 +28,18 @@ def get_pet_formset():
         CustomUser, Pet, form=PetForm,
         fields=['name', 'pet_type', 'age', 'profile_picture'], extra=1, can_delete=True
     )
+
+
+class TransferPetForm(forms.ModelForm):
+    to_user = forms.ModelChoiceField(queryset=CustomUser.objects.all(), label="Transfer to User")
+
+    class Meta:
+        model = PetTransferRequest
+        fields = ['message', 'to_user']
+        labels = {
+            'message': 'Transfer Message',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['to_user'].queryset = CustomUser.objects.exclude(is_active=False)

@@ -9,7 +9,10 @@ from UserManagement.models import CustomUser
 from .models import Pet, PetTransferRequest
 from .permissions import IsOwnerPermission, IsOwnerOrRecipient
 from .serializers import PetSerializer, PetTransferRequestSerializer, PetTransferRequestDetailSerializer
-
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from .models import Pet, PetTransferRequest
+from .forms import TransferPetForm
 
 class PetViewSet(viewsets.ModelViewSet):
     queryset = Pet.objects.all()
@@ -74,3 +77,28 @@ class PetTransferRequestViewSet(viewsets.ModelViewSet):
             transfer_request.save()
 
         return Response({'message': 'Pet transfer rejected.'})
+
+
+
+
+@login_required
+def transfer_pet(request, pet_id):
+    pet = get_object_or_404(Pet, id=pet_id, owner=request.user)
+    if request.method == 'POST':
+        form = TransferPetForm(request.POST)
+        if form.is_valid():
+            transfer_request = form.save(commit=False)
+            transfer_request.pet = pet
+            transfer_request.from_user = request.user
+            # Setting the to_user from the form
+            transfer_request.to_user = form.cleaned_data['to_user']
+            transfer_request.save()
+            # Updating the pet's owner
+            pet.owner = transfer_request.to_user
+            pet.save()
+            return redirect('UserManagement:pets')
+    else:
+        form = TransferPetForm()
+
+    return render(request, 'UserManagement/transfer_pet.html', {'form': form, 'pet': pet})
+

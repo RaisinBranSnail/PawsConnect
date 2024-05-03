@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Pet Confirmation</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f9f9f9;
+            text-align: center;
+            padding-top: 50px;
+        }
+        .confirmation-box {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin: auto;
+            display: inline-block;
+        }
+        .confirmation-message {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .sad-emoji {
+            font-size: 2em;
+            margin-right: 10px;
+        }
+        .button {
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .confirm-button {
+            background-color: #e74c3c;
+        }
+        .cancel-button {
+            background-color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+
+<div class="confirmation-box">
+    <div class="confirmation-message">
+        <span class="sad-emoji">😔</span>
+        Are you sure you want to delete {{ pet.name }}'s profile?
+    </div>
+    <form method="POST">
+        {% csrf_token %}
+        <button type="submit" class="button confirm-button">Confirm</button>
+        <a href="{% url 'UserManagement:pets' %}" class="button cancel-button">Cancel</a>
+    </form>
+</div>
+
+</body>
+</html>

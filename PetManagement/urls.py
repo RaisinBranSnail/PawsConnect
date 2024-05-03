@@ -1,13 +1,13 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import PetViewSet, PetTransferRequestViewSet
-
+from . import views
 router = DefaultRouter()
-router.register(r'pets', PetViewSet, basename='pet')
-router.register(r'pet-transfer-requests', PetTransferRequestViewSet, basename='pet-transfer-request')
-
+router.register(r'pets', PetViewSet)
+router.register(r'transfer_requests', PetTransferRequestViewSet)
 app_name = 'PetManagement'
 
 urlpatterns = [
+    path('transfer_pet/<int:pet_id>/', views.transfer_pet, name='transfer_pet'),
     path('', include(router.urls)),
 ]
