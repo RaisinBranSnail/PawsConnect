@@ -1,40 +1,84 @@
 {% extends 'UserManagement/base.html' %}
+{% load static %}
+
 {% block content %}
+<style>
+    .profile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px;
+        background-color: #f8f9fa;
+    }
 
-    <style>
-        .left-align-hr {
-            width: calc(500% + 200px);
-            margin: 0 -50px 50px -500px;
-            border: none;
-            border-top: 3px dotted darkblue;
-            border-radius: 5px;
-        }
-    </style>
+    .profile-info {
+        flex-grow: 1;
+        padding: 0 20px;
+    }
 
-    <div class="text-left mb-3">
-        <a href="{% url 'UserManagement:edit_profile' %}" class="btn btn-primary">
-            <i class="fas fa-cog"></i> Edit Profile
-        </a> <h1 style="text-align: center">{{ user.display_name }}'s Profile</h1>
-    </div>
+    .user-actions {
+        display: flex;
+        gap: 10px;
+    }
 
-    {% if user.about_me %}
-        <p>Bio: {{ user.about_me }}</p>
-    {% endif %}
+    .posts-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        padding: 20px;
+    }
 
-    {% if user.location %}
-        <p>Location: {{ user.location }}</p>
-    {% endif %}
+    .post {
+        position: relative;
+        background-size: cover;
+        background-position: center;
+        aspect-ratio: 1;
+    }
 
-    {% if user.is_authenticated %}
+    .post-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .post:hover .post-overlay {
+        opacity: 1;
+    }
+</style>
+
+<div class="profile-header">
+    <div class="profile-info">
+        <h1>{{ user.display_name }}'s Profile</h1>
         <p>Email: {{ user.email }}</p>
-        <p>Join date: {{ user.date_joined }}</p>
+        <p>Join date: {{ user.date_joined|date:"Y-m-d" }}</p>
+        <p>Bio: {{ user.about_me }}</p>
+    </div>
+    <div class="user-actions">
+        <a href="{% url 'UserManagement:edit_profile' slug=user.slug %}" class="btn btn-primary">Edit Profile</a>
+        <a href="{% url 'UserManagement:pets' %}" class="btn btn-info">Pets</a>
+        <a href="{% url 'UserManagement:friends' %}" class="btn btn-success">Friends</a>
+    </div>
+</div>
 
-        <div class="btn-group d-flex justify-content-center" role="group" aria-label="User actions">
-            <a href="{% url 'UserManagement:pets' %}" class="btn btn-primary">Pets</a>
-            <a href="{% url 'UserManagement:friends' %}" class="btn btn-primary">Friends</a>
-            <a href="{% url 'UserManagement:photos' %}" class="btn btn-primary">Photos</a>
+{% if posts %}
+    <div class="posts-grid">
+        {% for post in posts %}
+        <div class="post" style="background-image: url('{{ post.image.url }}');">
+            <div class="post-overlay">{{ post.caption }}</div>
         </div>
-    {% endif %}
+        {% endfor %}
+    </div>
+{% else %}
+    <p>No posts available.</p>
+{% endif %}
 
-    <br><hr class="left-align-hr">
 {% endblock %}

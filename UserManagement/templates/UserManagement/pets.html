@@ -30,8 +30,8 @@
                             <h5 class="card-title">{{ pet.name }}</h5>
                             <p class="card-text">Age: {{ pet.age }}</p>
                             <p class="card-text">Owner: {{ user.username }}</p>
-                            <a href="{% url 'PetManagement:pet_profile' pet.slug %}" class="btn btn-primary">View Profile</a>
-                            <a href="{% url 'PetManagement:delete_pet' pet.id %}" class="btn btn-danger">Delete</a>
+                            <a href="{% url 'UserManagement:pet_profile' pet.slug %}" class="btn btn-primary">View Profile</a>
+                            <a href="{% url 'UserManagement:delete_pet' pet.id %}" class="btn btn-danger">Delete</a>
                         </div>
                     </div>
                 </div>
@@ -51,7 +51,7 @@
 <div class="container mt-3">
     <div class="row justify-content-center">
         <div class="col-md-4 text-center">
-            <a href="{% url 'PetManagement:add_pet' %}" class="btn btn-success">Add Pet</a>
+            <a href="{% url 'UserManagement:add_pet' %}" class="btn btn-success">Add Pet</a>
             <a href="/user/profile/" class="btn btn-primary">Back to Profile</a>
         </div>
     </div>

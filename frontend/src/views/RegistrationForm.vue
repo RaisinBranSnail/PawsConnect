@@ -82,15 +82,15 @@
     </form>
   </div>
 </template>
-
-
 <script>
 import { useVuelidate } from '@vuelidate/core'
 import { required, email } from '@vuelidate/validators'
 import axios from 'axios'
+import { useRouter } from 'vue-router' // Import useRouter
 
 export default {
   setup() {
+    const router = useRouter(); // Initialize the router
     const form = {
       email: '',
       password: '',
@@ -102,7 +102,7 @@ export default {
       zip: '',
       hasPets: false,
       pets: [{ name: '', type: '', age: null }]
-    }
+    };
 
     const rules = {
       form: {
@@ -115,50 +115,58 @@ export default {
         state: { required },
         zip: { required }
       }
-    }
+    };
 
-    const v$ = useVuelidate(rules, { form })
+    const v$ = useVuelidate(rules, { form });
 
-    return { form, v$ }
+    return { form, v$, router };
   },
   data() {
     return {
       successMessage: '',
       errorMessage: ''
-    }
+    };
   },
   methods: {
     async registerUser() {
-      this.v$.$touch()
-      if (!this.v$.$invalid) {
-        try {
-          const response = await axios.post('/users/', this.form)
-          // Handle successful registration
-          this.successMessage = 'Registration successful!'
-          // Reset form fields
-          this.form = {
-            email: '',
-            password: '',
-            firstName: '',
-            lastName: '',
-            displayName: '',
-            city: '',
-            state: '',
-            zip: '',
-            hasPets: false,
-            pets: [{ name: '', type: '', age: null }]
-          }
-          console.log("Response", response.data)
-        } catch (error) {
-          // Handle registration error
-          this.errorMessage = 'Registration failed. Please try again.'
-          console.error(error)
-        }
+      console.log("Register User method called");
+      this.v$.$touch(); // Touch all fields to trigger validation
+      console.log("Form data before submission:", this.form);
+      console.log("Validation state:", this.v$.$invalid);
+      if (this.v$.$invalid) {
+        console.log("Form is invalid, not submitting");
+        console.log("Validation errors:", this.v$.$errors); // Log detailed validation errors
+        return; // Stop execution if the form is invalid
+      }
+
+      try {
+        const response = await axios.post('/users/', this.form);
+        console.log("Registration successful", response);
+
+        this.successMessage = 'Registration successful!';
+        this.router.push('/login'); // Navigate to login on success
+        this.form = {
+          email: '',
+          password: '',
+          firstName: '',
+          lastName: '',
+          displayName: '',
+          city: '',
+          state: '',
+          zip: '',
+          hasPets: false,
+          pets: [{ name: '', type: '', age: null }]
+        }; // Reset form after successful registration
+      } catch (error) {
+        this.errorMessage = 'Registration failed. Please try again.';
+        console.error("Registration error:", error.response ? error.response.data : error); // Log error details from server
       }
     },
     addPet() {
-      this.form.pets.push({ name: '', type: '', age: null })
+      this.form.pets.push({ name: '', type: '', age: null });
+      console.log("Added new pet", this.form.pets); // Log action of adding a pet
     }
   }
 }
 </script>
+

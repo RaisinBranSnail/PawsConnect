@@ -15,7 +15,9 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal308.dll'
 
+GEOS_LIBRARY_PATH = r'C:\OSGeo4W\bin\geos_c.dll'
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -93,9 +95,9 @@ REST_FRAMEWORK = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'pawsconnect',
-        'USER': 'tyrellbaker',
-        'PASSWORD': config('DATABASE_PASSWORD'),
+        'NAME': 'PawsConnect',
+        'USER': 'postgres',
+        'PASSWORD': '759318',
         'HOST': 'localhost',
         'PORT': '5432',
     }

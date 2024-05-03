@@ -11,7 +11,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
+from django.contrib.auth import login
 from Content.models import Post
 from PetManagement.models import Pet, PetProfile
 from .decorators import profile_completion_required
@@ -33,6 +33,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         serializer.save()
 
 
+
 def user_login(request):
     if request.method == 'POST':
         form = CustomLoginForm(request.POST)
@@ -42,22 +43,15 @@ def user_login(request):
             user = authenticate(request, username=username, password=password)
             if user:
                 login(request, user)
-                logger.info(f"User authenticated successfully: {user.username}")
-                token, created = Token.objects.get_or_create(user=user)
-
-                # Instead of redirect, return JSON data
-                redirect_url = 'user_completion' if user.profile_incomplete else f'profile/{user.slug}'
-                return JsonResponse({
-                    'token': token.key,
-                    'redirect_url': redirect_url
-                })
+                # Correctly form the redirect URL
+                redirect_url = reverse('UserManagement:user_completion') if user.profile_incomplete else reverse('UserManagement:profile', kwargs={'slug': user.slug})
+                return redirect(redirect_url)  # Use Django's redirect function
             else:
                 return JsonResponse({'error': "Invalid username or password"}, status=400)
         return render(request, 'UserManagement/login.html', {'form': form})
     else:
         form = CustomLoginForm()
         return render(request, 'UserManagement/login.html', {'form': form})
-
 def home(request):
     if request.user.is_authenticated:
         return redirect('UserManagement:profile', slug=request.user.slug)
@@ -65,36 +59,29 @@ def home(request):
         return render(request, 'UserManagement/home.html')
 
 
+from django.contrib.auth import login, authenticate
+
 def register(request):
-    if request.method == 'POST':
-        user_form = UserRegistrationForm(request.POST, request.FILES)
-        pet_formset = PetFormSet(request.POST, request.FILES)
+    user_form = UserRegistrationForm(request.POST or None, request.FILES or None)
+    pet_formset = PetFormSet(request.POST or None, request.FILES or None, instance=None)
 
-        if user_form.is_valid() and pet_formset.is_valid():
-            user = user_form.save(commit=False)
-            user.save()
+    if request.method == 'POST' and user_form.is_valid():
+        user = user_form.save(commit=False)
+        user.save()
+        user.backend = 'django.contrib.auth.backends.ModelBackend'  # Specify the backend
+        login(request, user)  # Log the user in immediately after registration
 
-            for form in pet_formset:
-                if form.is_valid():
-                    pet = form.save(commit=False)
-                    pet.owner = user
-                    pet.save()
-                    user.pets.add(pet)
-                    PetProfile.objects.create(pet=pet)
+        if pet_formset.is_bound and pet_formset.is_valid():
+            pet_formset.instance = user
+            pet_formset.save()
 
-            user.profile_incomplete = False
-            user.save()
-
-            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-            return redirect('UserManagement:profile', slug=user.slug)
-    else:
-        user_form = UserRegistrationForm()
-        pet_formset = PetFormSet()
+        return redirect('UserManagement:profile', slug=user.slug)  # Redirect to the user's profile
 
     return render(request, 'UserManagement/register.html', {
         'user_form': user_form,
         'pet_formset': pet_formset
     })
+
 
 
 @login_required
@@ -122,11 +109,12 @@ class CustomLogoutView(LogoutView):
         logger.info("CustomLogoutView: User logged out.")
         return response
 
-
 @login_required
 @profile_completion_required
 def profile(request, slug):
     user = get_object_or_404(CustomUser, slug=slug)
+    print("User Bio:", user.about_me)  # This will print the bio in the console
+    print("Debug: User slug is", user.slug)  # Ensure this prints the correct slug
     posts = Post.objects.filter(user=user)
 
     pet_data = []
@@ -142,31 +130,32 @@ def profile(request, slug):
         pet_data.append(pet_info)
 
     context = {
-        'user': {
-            'display_name': user.display_name,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'location': user.location,
-            'about_me': user.profile.about_me,
-        },
+        'user': user,
         'posts': posts,
         'pet_data': pet_data,
     }
+    print("User slug:", user.slug)  # Debugging statement to check the slug value
+    print(user.slug)  # Add this line to check what the slug is right before rendering
     return render(request, 'UserManagement/profile.html', context)
 
 
 @login_required
-def edit_profile(request):
+def edit_profile(request, slug):
+    user = get_object_or_404(CustomUser, slug=slug)
     if request.method == 'POST':
-        form = EditProfileForm(request.POST, request.FILES, instance=request.user)
+        form = EditProfileForm(request.POST, request.FILES, instance=user)
         if form.is_valid():
             form.save()
-            return redirect('UserManagement:profile', slug=request.user.slug)
+            return redirect('UserManagement:profile', slug=user.slug)
+        else:
+            print(form.errors)  # Print form errors to the console or handle them
     else:
-        form = EditProfileForm(instance=request.user)
-    return render(request, 'UserManagement/edit_profile.html', {'form': form})
+        form = EditProfileForm(instance=user)
 
-
+    return render(request, 'UserManagement/edit_profile.html', {
+        'form': form,
+        'user': user  # Pass user to the template for context
+    })
 @login_required
 def edit_pet_profile(request, pet_slug):
     pet = get_object_or_404(Pet, slug=pet_slug, owner=request.user)

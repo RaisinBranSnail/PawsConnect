@@ -32,7 +32,6 @@ class CustomLoginForm(forms.Form):
 
 logger = logging.getLogger(__name__)
 
-
 class UserRegistrationForm(UserCreationForm):
     first_name = forms.CharField(max_length=30, required=True, help_text='Required.')
     last_name = forms.CharField(max_length=30, required=True, help_text='Required.')
@@ -71,24 +70,26 @@ class UserRegistrationForm(UserCreationForm):
         except CustomUser.DoesNotExist:
             return email
 
+    def clean_password2(self):
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
+            raise ValidationError("Passwords don't match.")
+        self.validate_password_strength(password1)
+        return password2
 
-def clean_password2(self):
-    password1 = self.cleaned_data.get("password1")
-    password2 = self.cleaned_data.get("password2")
-    if password1 and password2 and password1 != password2:
-        raise ValidationError("Passwords don't match.")
-    if password1:
-        if len(password1) < 8:
+    def validate_password_strength(self, password):
+        if len(password) < 8:
             raise ValidationError("Password must be at least 8 characters long.")
-        if not any(char.isdigit() for char in password1):
+        if not any(char.isdigit() for char in password):
             raise ValidationError("Password must contain at least one digit.")
-        if not any(char.isupper() for char in password1):
+        if not any(char.isupper() for char in password):
             raise ValidationError("Password must contain at least one uppercase letter.")
-        if not any(char.islower() for char in password1):
+        if not any(char.islower() for char in password):
             raise ValidationError("Password must contain at least one lowercase letter.")
-        if not any(char in "!@#$%^&*()" for char in password1):
+        if not any(char in "!@#$%^&*()" for char in password):
             raise ValidationError("Password must contain at least one special character: !@#$%^&*().")
-    return password2
+
 
 
 class EditProfileForm(forms.ModelForm):
