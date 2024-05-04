@@ -1,6 +1,9 @@
 from autoslug import AutoSlugField
 from django.db import models
 from django.urls import reverse
+from django.contrib.auth.models import AbstractUser
+
+from UserManagement.models import CustomUser
 
 
 class PetManager(models.Manager):
@@ -21,7 +24,12 @@ class Pet(models.Model):
         REPTILE = 'reptile', 'Reptile'
         OTHER = 'other', 'Other'
 
-    owner = models.ForeignKey('UserManagement.CustomUser', on_delete=models.CASCADE)
+    owner = models.ForeignKey(
+        'UserManagement.CustomUser',
+        on_delete=models.CASCADE,
+        related_name='owned_pets',  # Unique related_name for reverse relationship
+        help_text="The user who owns the pet."
+    )
     name = models.CharField(max_length=100)
     breed = models.CharField(max_length=100, blank=True)
     color = models.CharField(max_length=50, blank=True)
@@ -42,7 +50,6 @@ class Pet(models.Model):
     def get_display_pet_type(self):
         """Returns a nicely formatted pet type for display."""
         return self.pet_type.capitalize()
-
 
 class PetProfile(models.Model):
     pet = models.OneToOneField(Pet, on_delete=models.CASCADE, related_name='profile')

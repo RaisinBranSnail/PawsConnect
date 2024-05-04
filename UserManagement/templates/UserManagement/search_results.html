@@ -1,0 +1,60 @@
+{% extends 'UserManagement/base.html' %}
+
+{% block content %}
+<h2>Search Results for "{{ query }}"</h2>
+
+<div class="results">
+    <h3>Users</h3>
+    <ul>
+    {% for user in user_results %}
+        <li>
+            {{ user.username }}
+            <button id="follow-btn-{{ user.id }}" data-user-id="{{ user.id }}" class="follow-btn">
+                {% if user.profile in request.user.profile.friends.all %}
+                    Following
+                {% else %}
+                    Follow
+                {% endif %}
+            </button>
+        </li>
+    {% empty %}
+        <li>No users found.</li>
+    {% endfor %}
+    </ul>
+
+    <h3>Pets</h3>
+    <ul>
+    {% for pet in pet_results %}
+        <li>
+            {{ pet.name }} (Owned by {{ pet.owner.username }})
+            <a href="{% url 'UserManagement:follow_pet' pet.id %}">Follow</a>
+        </li>
+    {% empty %}
+        <li>No pets found.</li>
+    {% endfor %}
+    </ul>
+</div>
+
+<script>
+document.querySelectorAll(".follow-btn").forEach(button => {
+    button.addEventListener("click", function() {
+        var userId = this.getAttribute("data-user-id");
+
+        fetch(`/user/follow_user/${userId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.is_following) {
+                        this.textContent = "Following";
+                    } else {
+                        this.textContent = "Follow";
+                    }
+                } else {
+                    alert(data.error || "An error occurred");
+                }
+            });
+    });
+});
+</script>
+
+{% endblock %}

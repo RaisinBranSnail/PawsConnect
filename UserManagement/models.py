@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from imagekit.models import ProcessedImageField
 from imagekit.processors import ResizeToFill
-
+from django.conf import settings
 LANGUAGE_CHOICES = [
     ('en', 'English'),
     ('es', 'Spanish'),
@@ -57,6 +57,9 @@ class CustomUser(AbstractUser):
     friends = models.ManyToManyField('self', symmetrical=False, related_name='user_friends', blank=True)
     email = models.EmailField(unique=True, null=False)
     about_me = models.TextField(blank=True, null=True)
+    followed_pets = models.ManyToManyField('PetManagement.Pet', related_name='followers')
+    followers = models.ManyToManyField("self", symmetrical=False, related_name="following", blank=True)
+    followed_users = models.ManyToManyField("self", symmetrical=False, related_name="user_following", blank=True)
 
     @property
     def outgoing_friend_requests(self):
@@ -88,8 +91,9 @@ class CustomUser(AbstractUser):
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='profile')
 
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="profile")
+    friends = models.ManyToManyField("self", blank=True)
     location = models.CharField(max_length=100, blank=True)
     friends = models.ManyToManyField('self', symmetrical=False, related_name='user_friends', blank=True)
     about_me = models.TextField(_("about me"), blank=True, max_length=500, null=True)
@@ -137,3 +141,4 @@ def update_friends_count(sender, instance, created, **kwargs):
         instance.user_from.save(update_fields=['num_friends'])
         instance.user_to.num_friends += 1
         instance.user_to.save(update_fields=['num_friends'])
+

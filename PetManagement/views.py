@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from django.contrib import messages
-
+from django.http import JsonResponse
 from UserManagement.models import CustomUser
 from .models import Pet, PetTransferRequest
 from .permissions import IsOwnerPermission, IsOwnerOrRecipient
@@ -13,7 +13,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .models import Pet, PetTransferRequest
 from .forms import TransferPetForm
-
+from django.shortcuts import get_object_or_404, redirect
+from django.http import HttpResponse
+from UserManagement.models import CustomUser
 class PetViewSet(viewsets.ModelViewSet):
     queryset = Pet.objects.all()
     serializer_class = PetSerializer
@@ -102,3 +104,23 @@ def transfer_pet(request, pet_id):
 
     return render(request, 'UserManagement/transfer_pet.html', {'form': form, 'pet': pet})
 
+
+
+@login_required
+def follow_user(request, user_id):
+    user_to_follow = get_object_or_404(CustomUser, id=user_id)
+    user_profile = request.user.profile
+
+    if user_to_follow in user_profile.friends.all():
+        user_profile.friends.remove(user_to_follow)
+        is_following = False
+    else:
+        user_profile.friends.add(user_to_follow)
+        is_following = True
+
+    return JsonResponse({"is_following": is_following})
+# @login_required
+# def follow_pet(request, pet_id):
+#     pet = Pet.objects.get(pk=pet_id)
+#     request.user.followed_pets.add(pet)
+#     return redirect('UserManagement:search')  # Redirect to the search page or wherever appropriate

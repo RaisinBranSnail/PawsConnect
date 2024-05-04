@@ -1,3 +1,5 @@
+<!-- UserManagement/profile.html -->
+
 {% extends 'UserManagement/base.html' %}
 {% load static %}
 
@@ -61,11 +63,31 @@
         <p>Email: {{ user.email }}</p>
         <p>Join date: {{ user.date_joined|date:"Y-m-d" }}</p>
         <p>Bio: {{ user.about_me }}</p>
+        <p>
+            <a href="{% url 'UserManagement:followers_list' user.id %}">
+                Followers: {{ followers.count }}
+            </a>
+        </p>
+        <p>
+            <a href="{% url 'UserManagement:following_list' user.slug %}">
+                Following: {{ following.count }}
+            </a>
+        </p>
     </div>
     <div class="user-actions">
+
         <a href="{% url 'UserManagement:edit_profile' slug=user.slug %}" class="btn btn-primary">Edit Profile</a>
         <a href="{% url 'UserManagement:pets' %}" class="btn btn-info">Pets</a>
         <a href="{% url 'UserManagement:friends' %}" class="btn btn-success">Friends</a>
+        {% if user != request.user %}
+        <button id="follow-btn" data-user-id="{{ user.id }}" class="btn {% if is_following %}btn-secondary{% else %}btn-primary{% endif %}">
+            {% if is_following %}
+                Following
+            {% else %}
+                Follow
+            {% endif %}
+        </button>
+        {% endif %}
     </div>
 </div>
 
@@ -80,5 +102,24 @@
 {% else %}
     <p>No posts available.</p>
 {% endif %}
+
+<script>
+document.getElementById("follow-btn").addEventListener("click", function() {
+    var button = this;
+    var userId = button.getAttribute("data-user-id");
+
+    fetch(`/user/follow_user/${userId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.is_following) {
+                button.textContent = "Following";
+                button.classList.replace("btn-primary", "btn-secondary");
+            } else {
+                button.textContent = "Follow";
+                button.classList.replace("btn-secondary", "btn-primary");
+            }
+        });
+});
+</script>
 
 {% endblock %}

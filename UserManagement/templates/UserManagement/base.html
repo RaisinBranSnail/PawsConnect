@@ -46,14 +46,15 @@
                     {% endif %}
                 </ul>
 
-                <form class="form-inline my-2 my-lg-0">
+                <form class="form-inline my-2 my-lg-0" action="{% url 'UserManagement:search' %}" method="get">
                     <div class="input-group">
-                        <input class="form-control" type="search" placeholder="Search" aria-label="Search">
+                        <input class="form-control" type="search" placeholder="Search users or pets" name="query" aria-label="Search">
                         <div class="input-group-append">
                             <button class="btn btn-outline-primary" type="submit">Search</button>
                         </div>
                     </div>
                 </form>
+
             </div>
         </div>
     </nav>

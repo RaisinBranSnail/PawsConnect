@@ -24,6 +24,12 @@ from .utils import search_pets, search_users
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth import get_user_model
+from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
+from .models import CustomUser
+from .models import CustomUser
+from PetManagement.models import Pet  # Adjust this import according to the actual location of the Pet model.
+from UserManagement.models import CustomUser, UserProfile
 
 User = get_user_model()
 
@@ -125,9 +131,13 @@ class CustomLogoutView(LogoutView):
 @profile_completion_required
 def profile(request, slug):
     user = get_object_or_404(CustomUser, slug=slug)
-    print("User Bio:", user.about_me)  # This will print the bio in the console
-    print("Debug: User slug is", user.slug)  # Ensure this prints the correct slug
     posts = Post.objects.filter(user=user)
+
+    followers = user.followers.all()  # Access followers from user
+    following = user.following.all()  # Access following from user
+
+    # Check if the logged-in user is following the profile's user
+    is_following = user in request.user.following.all() if user != request.user else None
 
     pet_data = []
     for pet in user.pets.all():
@@ -145,11 +155,11 @@ def profile(request, slug):
         'user': user,
         'posts': posts,
         'pet_data': pet_data,
+        'is_following': is_following,
+        'followers': followers,
+        'following': following,
     }
-    print("User slug:", user.slug)  # Debugging statement to check the slug value
-    print(user.slug)  # Add this line to check what the slug is right before rendering
     return render(request, 'UserManagement/profile.html', context)
-
 
 @login_required
 def edit_profile(request, slug):
@@ -335,3 +345,76 @@ def transfer_pet(request, pet_id):
 
     return render(request, 'UserManagement/transfer_pet.html', {'form': form, 'pet': pet})
 
+
+def search(request):
+    query = request.GET.get('query', '')
+    if query:
+        user_results = CustomUser.objects.filter(username__icontains=query)
+        pet_results = Pet.objects.filter(name__icontains=query)
+    else:
+        user_results = Pet.objects.none()
+        pet_results = CustomUser.objects.none()
+
+    context = {
+        'user_results': user_results,
+        'pet_results': pet_results,
+        'query': query
+    }
+    return render(request, 'UserManagement/search_results.html', context)
+
+
+
+
+
+# Follow/following functionality
+
+@login_required
+def follow_user(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    if request.user == user:
+        return JsonResponse({'success': False, 'error': "You cannot follow yourself."})
+
+    if user in request.user.following.all():
+        request.user.following.remove(user)
+        is_following = False
+    else:
+        request.user.following.add(user)
+        is_following = True
+
+    return JsonResponse({'success': True, 'is_following': is_following})
+
+
+
+def follow_pet(request, pet_id):
+    if request.method == 'POST':
+        pet_to_follow = get_object_or_404(Pet, pk=pet_id)
+        # Logic to follow the pet
+        request.user.follow_pet(pet_to_follow)  # Similar method for following pets
+        return redirect('some_view_name')
+
+
+@login_required
+def followers_list(request, user_id):
+    user = get_object_or_404(CustomUser, id=user_id)
+    followers = user.followers.all()
+    return render(request, 'UserManagement/followers_list.html', {'user': user, 'followers': followers})
+@login_required
+def following_list(request, slug):
+    user = get_object_or_404(CustomUser, slug=slug)
+    profile = user.profile
+
+    following_users = profile.following_users.all()
+    following_pets = profile.following_pets.all()
+
+    context = {
+        'user': user,
+        'following_users': following_users,
+        'following_pets': following_pets,
+    }
+    return render(request, 'UserManagement/following_list.html', context)
+
+@login_required
+def unfollow_user(request, user_id):
+    user = get_object_or_404(CustomUser, id=user_id)
+    request.user.following.remove(user)
+    return JsonResponse({'success': True})

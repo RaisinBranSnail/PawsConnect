@@ -31,5 +31,11 @@ urlpatterns = [
     path('edit_pet_profile/<slug:pet_slug>/', views.edit_pet_profile, name='edit_pet_profile'),
     path('pet_management/', include('PetManagement.urls')),  # Include PetManagement URLs
     path('search_profile/', views.search_profile, name='search_profile'),
+    path('search/', views.search, name='search'),
 
+    path('follow_user/<int:user_id>/', views.follow_user, name='follow_user'),
+    path('follow_pet/<int:pet_id>/', views.follow_pet, name='follow_pet'),
+    path('followers/<int:user_id>/', views.followers_list, name='followers_list'),
+    path('user/following_list/<slug:slug>/', views.following_list, name='following_list'),
+    path('unfollow_user/<int:user_id>/', views.unfollow_user, name='unfollow_user'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
