@@ -10,11 +10,12 @@
         <li>
             {{ user.username }}
             <button id="follow-btn-{{ user.id }}" data-user-id="{{ user.id }}" class="follow-btn">
-                {% if user.profile in request.user.profile.friends.all %}
+                {% if user in request.user.following.all %}
                     Following
                 {% else %}
                     Follow
                 {% endif %}
+
             </button>
         </li>
     {% empty %}

@@ -58,9 +58,18 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True, null=False)
     about_me = models.TextField(blank=True, null=True)
     followed_pets = models.ManyToManyField('PetManagement.Pet', related_name='followers')
-    followers = models.ManyToManyField("self", symmetrical=False, related_name="following", blank=True)
-    followed_users = models.ManyToManyField("self", symmetrical=False, related_name="user_following", blank=True)
-
+    followed_users = models.ManyToManyField(
+        "self",
+        symmetrical=False,
+        related_name="following_users",
+        blank=True
+    )
+    followers = models.ManyToManyField(
+        "self",
+        symmetrical=False,
+        related_name="user_following",
+        blank=True
+    )
     @property
     def outgoing_friend_requests(self):
         return self.sent_friendships.filter(status='pending')

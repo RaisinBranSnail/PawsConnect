@@ -217,3 +217,20 @@ class SearchForm(forms.Form):
                 "Please provide a complete address: city, state, and zip code for location-based searches.")
 
         return cleaned_data
+
+class EditProfileForm(forms.ModelForm):
+    class Meta:
+        model = CustomUser
+        fields = [
+            'first_name',
+            'last_name',
+            'username',
+            'preferred_language',
+            'profile_picture',
+            'profile_visibility',
+            'city',
+            'state',
+            'zip_code',
+            'email',
+            'about_me',
+        ]
