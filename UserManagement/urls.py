@@ -38,4 +38,9 @@ urlpatterns = [
     path('followers/<int:user_id>/', views.followers_list, name='followers_list'),
     path('user/following_list/<slug:slug>/', views.following_list, name='following_list'),
     path('unfollow_user/<int:user_id>/', views.unfollow_user, name='unfollow_user'),
+
+    path('create-post/', views.create_post, name='create_post'),
+    path('edit-post/<int:post_id>/', views.edit_post, name='edit_post'),
+    path('delete-post/<int:post_id>/', views.delete_post, name='delete_post'),
+    path('post-feed/', views.post_feed, name='post_feed'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

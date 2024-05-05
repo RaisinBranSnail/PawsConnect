@@ -1,40 +1,59 @@
-<!-- UserManagement/profile.html -->
-
 {% extends 'UserManagement/base.html' %}
 {% load static %}
 
 {% block content %}
 <style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f8f9fa;
+    }
+
     .profile-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         padding: 20px;
-        background-color: #f8f9fa;
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        margin-bottom: 20px;
     }
 
     .profile-info {
+        display: flex;
+        align-items: center;
         flex-grow: 1;
         padding: 0 20px;
+    }
+
+    .user-details {
+        flex-grow: 1;
+    }
+
+    .user-following {
+        display: flex;
+        gap: 10px;
     }
 
     .user-actions {
         display: flex;
         gap: 10px;
+        flex-wrap: wrap;
     }
-
     .posts-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
+        gap: 20px;
         padding: 20px;
     }
 
     .post {
-        position: relative;
         background-size: cover;
         background-position: center;
         aspect-ratio: 1;
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
     }
 
     .post-overlay {
@@ -43,7 +62,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.4);
+        background: rgba(0, 0, 0, 0.5);
         color: white;
         display: flex;
         align-items: center;
@@ -55,47 +74,86 @@
     .post:hover .post-overlay {
         opacity: 1;
     }
+
+    .btn {
+        border-radius: 5px;
+        padding: 10px 15px;
+        background-color: #007BFF;
+        color: white;
+        border: none;
+        text-decoration: none;
+    }
+
+    .btn:hover {
+        background-color: #0056b3;
+    }
+
+    img.profile-pic {
+        width: 170px;
+        height: 170px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 20px;
+        margin-left: 76px;
+    }
+    .user-details{
+        text-align:center;
+    }
 </style>
 
 <div class="profile-header">
+    <img src="{{ user.profile_picture.url }}" alt="{{ user.display_name }}'s Profile Picture" class="profile-pic">
     <div class="profile-info">
-        <h1>{{ user.display_name }}'s Profile</h1>
-        <p>Email: {{ user.email }}</p>
-        <p>Join date: {{ user.date_joined|date:"Y-m-d" }}</p>
-        <p>Bio: {{ user.about_me }}</p>
-        <p>
-            <a href="{% url 'UserManagement:followers_list' user.id %}">
+        <div class="user-details">
+            <h1>{{ user.display_name }}'s Profile</h1>
+            <p>Email: {{ user.email }}</p>
+            <p>Join date: {{ user.date_joined|date:"Y-m-d" }}</p>
+            <p>Bio: {{ user.about_me }}</p>
+        </div>
+        <div class="user-following">
+            <a href="{% url 'UserManagement:followers_list' user.id %}" class="btn btn-outline-secondary">
                 Followers: {{ followers.count }}
             </a>
-        </p>
-        <p>
-            <a href="{% url 'UserManagement:following_list' user.slug %}">
+            <a href="{% url 'UserManagement:following_list' user.slug %}" class="btn btn-outline-secondary">
                 Following: {{ following.count }}
             </a>
-        </p>
-    </div>
-    <div class="user-actions">
-
-        <a href="{% url 'UserManagement:edit_profile' slug=user.slug %}" class="btn btn-primary">Edit Profile</a>
-        <a href="{% url 'UserManagement:pets' %}" class="btn btn-info">Pets</a>
-        <a href="{% url 'UserManagement:friends' %}" class="btn btn-success">Friends</a>
-        {% if user != request.user %}
-        <button id="follow-btn" data-user-id="{{ user.id }}" class="btn {% if is_following %}btn-secondary{% else %}btn-primary{% endif %}">
-            {% if is_following %}
-                Following
-            {% else %}
-                Follow
-            {% endif %}
-        </button>
-        {% endif %}
+        </div>
     </div>
 </div>
+
+{% if request.user == user %}
+<div class="user-actions">
+    <a href="{% url 'UserManagement:edit_profile' slug=user.slug %}" class="btn btn-primary">Edit Profile</a>
+    <a href="{% url 'UserManagement:create_post' %}" class="btn btn-primary">Create Post</a>
+    <a href="{% url 'UserManagement:pets' %}" class="btn btn-info">Pets</a>
+    <a href="{% url 'UserManagement:post_feed' %}" class="btn btn-info">Feed</a>
+</div>
+{% endif %}
+
+{% if request.user != user %}
+<button id="follow-btn" data-user-id="{{ user.id }}" class="btn {% if is_following %}btn-secondary{% else %}btn-primary{% endif %}">
+    {% if is_following %}
+        Following
+    {% else %}
+        Follow
+    {% endif %}
+</button>
+{% endif %}
 
 {% if posts %}
     <div class="posts-grid">
         {% for post in posts %}
         <div class="post" style="background-image: url('{{ post.image.url }}');">
-            <div class="post-overlay">{{ post.caption }}</div>
+            <div class="post-overlay">
+                <p>{{ post.caption }}</p>
+                {% if post.user == request.user %}
+                <a href="{% url 'UserManagement:edit_post' post.id %}" class="btn btn-info">Edit</a>
+                <form method="post" action="{% url 'UserManagement:delete_post' post.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+                {% endif %}
+            </div>
         </div>
         {% endfor %}
     </div>
@@ -104,22 +162,22 @@
 {% endif %}
 
 <script>
-document.getElementById("follow-btn").addEventListener("click", function() {
-    var button = this;
-    var userId = button.getAttribute("data-user-id");
+    document.getElementById("follow-btn").addEventListener("click", function() {
+        var button = this;
+        var userId = button.getAttribute("data-user-id");
 
-    fetch(`/user/follow_user/${userId}/`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.is_following) {
-                button.textContent = "Following";
-                button.classList.replace("btn-primary", "btn-secondary");
-            } else {
-                button.textContent = "Follow";
-                button.classList.replace("btn-secondary", "btn-primary");
-            }
-        });
-});
+        fetch(`/user/follow_user/${userId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_following) {
+                    button.textContent = "Following";
+                    button.classList.replace("btn-primary", "btn-secondary");
+                } else {
+                    button.textContent = "Follow";
+                    button.classList.replace("btn-secondary", "btn-primary");
+                }
+            });
+    });
 </script>
 
 {% endblock %}

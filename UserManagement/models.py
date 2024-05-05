@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from imagekit.models import ProcessedImageField
 from imagekit.processors import ResizeToFill
+
 from django.conf import settings
 LANGUAGE_CHOICES = [
     ('en', 'English'),
@@ -151,3 +152,16 @@ def update_friends_count(sender, instance, created, **kwargs):
         instance.user_to.num_friends += 1
         instance.user_to.save(update_fields=['num_friends'])
 
+#posts forms
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
+class Post(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    image = models.ImageField(upload_to='posts/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title

@@ -1,6 +1,70 @@
 {% extends 'UserManagement/base.html' %}
 
 {% block content %}
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #fafafa;
+        color: #333;
+    }
+
+    h2 {
+        text-align: center;
+        margin: 20px 0;
+    }
+
+    .results {
+        width: 80%;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #fff;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+    }
+
+    h3 {
+        color: #555;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+    }
+
+    ul {
+        list-style-type: none;
+        padding: 0;
+    }
+
+    li {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+    }
+
+    li:last-child {
+        border-bottom: none;
+    }
+
+    a {
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    .follow-btn {
+        padding: 5px 10px;
+        color: white;
+        background-color: #007bff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .follow-btn:hover {
+        background-color: #0056b3;
+    }
+</style>
+
 <h2>Search Results for "{{ query }}"</h2>
 
 <div class="results">
@@ -8,14 +72,16 @@
     <ul>
     {% for user in user_results %}
         <li>
-            {{ user.username }}
+            <!-- Link to the user's profile -->
+            <a href="{% url 'UserManagement:profile' user.slug %}">
+                {{ user.username }}
+            </a>
             <button id="follow-btn-{{ user.id }}" data-user-id="{{ user.id }}" class="follow-btn">
                 {% if user in request.user.following.all %}
                     Following
                 {% else %}
                     Follow
                 {% endif %}
-
             </button>
         </li>
     {% empty %}
@@ -27,7 +93,11 @@
     <ul>
     {% for pet in pet_results %}
         <li>
-            {{ pet.name }} (Owned by {{ pet.owner.username }})
+            {{ pet.name }} (Owned by
+            <!-- Link to the pet owner's profile -->
+            <a href="{% url 'UserManagement:profile' pet.owner.username %}">
+                {{ pet.owner.username }}
+            </a>)
             <a href="{% url 'UserManagement:follow_pet' pet.id %}">Follow</a>
         </li>
     {% empty %}

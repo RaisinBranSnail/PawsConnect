@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
-
+from .models import Post
 from PetManagement.forms import PetForm
 from PetManagement.models import Pet
 from .models import CustomUser
@@ -234,3 +234,8 @@ class EditProfileForm(forms.ModelForm):
             'email',
             'about_me',
         ]
+
+class PostForm(forms.ModelForm):
+    class Meta:
+        model = Post
+        fields = ['title', 'content', 'image']

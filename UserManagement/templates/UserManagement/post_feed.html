@@ -1,0 +1,157 @@
+{% extends 'UserManagement/base.html' %}
+
+{% block content %}
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #fafafa;
+    }
+
+    h2 {
+        text-align: center;
+        margin-top: 20px;
+        color: #333;
+    }
+
+    .posts-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        padding: 20px;
+        margin: auto;
+    }
+
+    .post {
+        width: 100%;
+        max-width: 600px; /* Limits the width for better readability */
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        overflow: hidden;
+        transition: box-shadow 0.3s ease;
+    }
+
+    .post:hover {
+        box-shadow: 0 6px 10px rgba(0,0,0,0.2);
+    }
+
+    .post-image {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover; /* Ensures the image covers the area without distortion */
+    }
+
+    .post-content {
+        padding: 15px;
+    }
+
+    .post-title {
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+
+    .post-user {
+        font-size: 14px;
+        color: #555;
+        margin-bottom: 5px;
+        text-decoration: none; /* Removes underline from links */
+    }
+
+    .post-body {
+        font-size: 16px;
+        color: #666;
+    }
+    .translate-btn {
+        cursor: pointer;
+        padding: 5px 10px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        margin-top: 10px;
+    }
+        .translate-btn {
+        cursor: pointer;
+        padding: 5px 10px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        margin-top: 10px;
+    }
+    .language-selector {
+        margin: 20px;
+        text-align: center;
+    }
+</style>
+
+<h2>Post Feed</h2>
+<div class="language-selector">
+    <label for="language">Translate posts to:</label>
+    <select id="language" onchange="translateAllPosts()">
+        <option value="">Select language</option>
+        <option value="fr">French</option>
+        <option value="es">Spanish</option>
+        <option value="de">German</option>
+        <!-- Add more languages as needed -->
+    </select>
+</div>
+
+<div class="posts-container">
+    {% for post in posts %}
+    <div class="post">
+        {% if post.image %}
+        <img src="{{ post.image.url }}" alt="Post image" class="post-image">
+        {% endif %}
+        <div class="post-content">
+            <div class="post-user">
+                <a href="{% url 'UserManagement:profile' slug=post.user.slug %}" style="color: #555;">
+                    {{ post.user.get_full_name }}
+                </a>
+            </div>
+            <div class="post-title">{{ post.title }}</div>
+            <div class="post-body" id="post-body-{{ post.id }}">{{ post.content }}</div>
+            <div class="date">{{ post.created_at|date:"M d, Y" }}</div>
+        </div>
+    </div>
+    {% empty %}
+        <p>No posts available.</p>
+    {% endfor %}
+</div>
+
+<script>
+    function translateAllPosts() {
+        let language = document.getElementById('language').value;
+        if (!language) return; // Do nothing if no language is selected
+
+        document.querySelectorAll('.post-body').forEach(function(postElement) {
+            let postId = postElement.id.split('-')[2]; // Assuming the ID format is 'post-body-{id}'
+            let text = postElement.textContent;
+
+            const url = `https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=${language}`;
+            const headers = {
+                'Ocp-Apim-Subscription-Key': '1fb1a6199c924de08a8aa527215264b1',
+                'Ocp-Apim-Subscription-Region': 'westus2',
+                'Content-Type': 'application/json'
+            };
+
+            const body = [{ 'text': text }];
+
+            fetch(url, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(body)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data[0] && data[0].translations && data[0].translations.length > 0) {
+                    const translatedText = data[0].translations[0].text;
+                    postElement.textContent = translatedText;
+                }
+            })
+            .catch(error => console.error('Error translating text:', error));
+        });
+    }
+</script>
+{% endblock %}

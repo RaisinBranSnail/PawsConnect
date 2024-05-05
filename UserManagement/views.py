@@ -30,6 +30,8 @@ from .models import CustomUser
 from .models import CustomUser
 from PetManagement.models import Pet  # Adjust this import according to the actual location of the Pet model.
 from UserManagement.models import CustomUser, UserProfile
+from .models import Post
+from .forms import PostForm
 
 User = get_user_model()
 
@@ -438,3 +440,46 @@ def edit_profile(request, slug):
     else:
         form = EditProfileForm(instance=user)
     return render(request, 'UserManagement/edit_profile.html', {'form': form, 'user': user})
+
+
+
+@login_required
+def create_post(request):
+    if request.method == 'POST':
+        form = PostForm(request.POST, request.FILES)
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.user = request.user
+            post.save()
+            return redirect('UserManagement:profile', slug=request.user.slug)
+    else:
+        form = PostForm()
+
+    return render(request, 'UserManagement/create_post.html', {'form': form})
+@login_required
+def edit_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id, user=request.user)
+    if request.method == 'POST':
+        form = PostForm(request.POST, request.FILES, instance=post)
+        if form.is_valid():
+            form.save()
+            return redirect('UserManagement:profile', slug=request.user.slug)
+    else:
+        form = PostForm(instance=post)
+
+    return render(request, 'UserManagement/edit_post.html', {'form': form, 'post': post})
+
+@login_required
+def delete_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id, user=request.user)
+    if request.method == 'POST':
+        post.delete()
+        return redirect('UserManagement:profile', slug=request.user.slug)
+
+    return render(request, 'UserManagement/delete_post.html', {'post': post})
+
+@login_required
+def post_feed(request):
+    posts = Post.objects.exclude(user=request.user)
+    return render(request, 'UserManagement/post_feed.html', {'posts': posts})
+

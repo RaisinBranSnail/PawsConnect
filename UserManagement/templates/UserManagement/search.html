@@ -34,7 +34,6 @@
     <button type="submit" class="btn btn-primary">Search</button>
 </form>
 
-
 <div id="search-results">
     {% if results %}
         {% if search_type == "user" %}
@@ -42,8 +41,10 @@
             <ul class="list-group">
                 {% for user in results %}
                     <li class="list-group-item">
-                        Username: {{ user.username }} <br>
-                        Email: {{ user.email }}
+                        <a href="{% url 'UserManagement:profile' slug=user.slug %}">
+                            Username: {{ user.username }} <br>
+                            Email: {{ user.email }}
+                        </a>
                     </li>
                 {% endfor %}
             </ul>
