@@ -1,0 +1,24 @@
+{% extends 'UserManagement/base.html' %}
+{% block content %}
+<div class="container">
+    <h1>{{ user.username }}'s Pets</h1>
+    <div class="row">
+        {% for pet in pets %}
+            <div class="col-md-4">
+                <div class="card">
+                    <img src="{{ pet.profile.profile_picture.url }}" class="card-img-top" alt="{{ pet.name }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ pet.name }}</h5>
+                        <p class="card-text">{{ pet.description }}</p>
+                        {% if can_follow %}
+                            <a href="{% url 'UserManagement:follow_pet' pet.id %}" class="btn btn-primary">Follow</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <p>No pets found.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

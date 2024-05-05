@@ -1,7 +1,7 @@
 {% extends 'UserManagement/base.html' %}
 {% block content %}
 
-<style>
+<style xmlns:PetManagement="http://www.w3.org/1999/xhtml" xmlns:PetManagement="http://www.w3.org/1999/xhtml">
     .left-align-hr {
         width: calc(500% + 200px);
         margin: 0 -50px 50px -500px;
@@ -66,7 +66,6 @@
     .btn-transfer:hover {
         opacity: 0.8;
     }
-
 </style>
 
 <h1 style="text-align: center;">{{ user.username }}'s Pets</h1>
@@ -77,51 +76,41 @@
         {% if user_pets %}
             {% for pet in user_pets %}
                 <div class="col-md-4 mb-4">
-                    <div class="card">
+                    <div class="card" onclick="location.href='{% url 'PetManagement:pet_profile' pet.slug %}'" style="cursor: pointer;">
                         {% if pet.profile and pet.profile.profile_picture %}
                             <img src="{{ pet.profile.profile_picture.url }}" class="card-img-top" alt="{{ pet.name }}">
                         {% else %}
-                            <img src="placeholder_image_url" class="card-img-top" alt="No profile picture available">
+                            <div class="card-img-top" style="height: 200px; display: flex; align-items: center; justify-content: center; background-color: #f0f0f0;">
+                                <span>No profile picture available</span>
+                            </div>
                         {% endif %}
-
                         <div class="card-body">
                             <h5 class="card-title">{{ pet.name }}</h5>
                             <p class="card-text">Age: {{ pet.age }}</p>
                             <p class="card-text">Owner: {{ user.username }}</p>
                         </div>
-
                         <div class="card-footer">
                             <div class="btn-group">
                                 <a href="{% url 'UserManagement:edit_pet_profile' pet.slug %}" class="btn btn-edit">Edit</a>
-                                <form method="GET" action="{% url 'UserManagement:delete_pet' pet_id=pet.id %}">
+                                <form method="POST" action="{% url 'UserManagement:delete_pet' pet.id %}">
+                                    {% csrf_token %}
                                     <button type="submit" class="btn btn-delete">Delete</button>
                                 </form>
                                 <a href="{% url 'PetManagement:transfer_pet' pet.id %}" class="btn btn-transfer">Transfer</a>
                             </div>
                         </div>
-
                     </div>
                 </div>
             {% endfor %}
         {% else %}
-            <div class="container">
-                <div class="row justify-content-center">
-                    <div class="col-md-6 text-center">
-                        <p>No pets found.</p>
-                    </div>
-                </div>
-            </div>
+            <div class="text-center">No pets found.</div>
         {% endif %}
     </div>
 </div>
 
-<div class="container mt-3">
-    <div class="row justify-content-center">
-        <div class="col-md-4 text-center">
-            <a href="{% url 'UserManagement:add_pet' %}" class="btn btn-success">Add Pet</a>
-            <a href="{% url 'UserManagement:profile' slug=user.slug %}" class="btn btn-primary">Back to Profile</a>
-        </div>
-    </div>
+<div class="container mt-3 text-center">
+    <a href="{% url 'UserManagement:add_pet' %}" class="btn btn-success">Add Pet</a>
+    <a href="{% url 'UserManagement:profile' slug=user.slug %}" class="btn btn-primary">Back to Profile</a>
 </div>
 
 {% endblock %}

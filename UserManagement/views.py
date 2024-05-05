@@ -178,6 +178,7 @@ def edit_profile(request, slug):
         'form': form,
         'user': user  # Pass user to the template for context
     })
+
 @login_required
 def edit_pet_profile(request, pet_slug):
     pet = get_object_or_404(Pet, slug=pet_slug, owner=request.user)
@@ -189,7 +190,6 @@ def edit_pet_profile(request, pet_slug):
     else:
         form = PetForm(instance=pet)
     return render(request, 'UserManagement/edit_pet_profile.html', {'form': form, 'pet': pet})
-
 
 @login_required
 def user_completion(request):
@@ -386,12 +386,14 @@ def follow_user(request, user_id):
 
 
 
+@login_required
 def follow_pet(request, pet_id):
-    if request.method == 'POST':
-        pet_to_follow = get_object_or_404(Pet, pk=pet_id)
-        # Logic to follow the pet
-        request.user.follow_pet(pet_to_follow)  # Similar method for following pets
-        return redirect('some_view_name')
+    pet = get_object_or_404(Pet, id=pet_id)
+    if request.user in pet.followers.all():
+        pet.followers.remove(request.user)
+    else:
+        pet.followers.add(request.user)
+    return redirect('UserManagement:user_pets', slug=pet.owner.slug)
 
 
 @login_required
@@ -446,26 +448,28 @@ def edit_profile(request, slug):
 @login_required
 def create_post(request):
     if request.method == 'POST':
-        form = PostForm(request.POST, request.FILES)
+        form = PostForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
             post.user = request.user
             post.save()
+            form.save_m2m()  # This is required to save the many-to-many relationships.
             return redirect('UserManagement:profile', slug=request.user.slug)
     else:
-        form = PostForm()
+        form = PostForm(user=request.user)
 
     return render(request, 'UserManagement/create_post.html', {'form': form})
+
 @login_required
 def edit_post(request, post_id):
     post = get_object_or_404(Post, id=post_id, user=request.user)
     if request.method == 'POST':
-        form = PostForm(request.POST, request.FILES, instance=post)
+        form = PostForm(request.POST, request.FILES, instance=post, user=request.user)
         if form.is_valid():
             form.save()
             return redirect('UserManagement:profile', slug=request.user.slug)
     else:
-        form = PostForm(instance=post)
+        form = PostForm(instance=post, user=request.user)
 
     return render(request, 'UserManagement/edit_post.html', {'form': form, 'post': post})
 
@@ -482,4 +486,3 @@ def delete_post(request, post_id):
 def post_feed(request):
     posts = Post.objects.exclude(user=request.user)
     return render(request, 'UserManagement/post_feed.html', {'posts': posts})
-

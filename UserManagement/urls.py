@@ -10,7 +10,6 @@ from .views import search_profile
 router = DefaultRouter()
 router.register('users', CustomUserViewSet)
 router.register(r'friendships', views.FriendshipViewSet, basename='friendship')
-
 app_name = 'UserManagement'
 
 urlpatterns = [
@@ -32,15 +31,15 @@ urlpatterns = [
     path('pet_management/', include('PetManagement.urls')),  # Include PetManagement URLs
     path('search_profile/', views.search_profile, name='search_profile'),
     path('search/', views.search, name='search'),
-
     path('follow_user/<int:user_id>/', views.follow_user, name='follow_user'),
     path('follow_pet/<int:pet_id>/', views.follow_pet, name='follow_pet'),
     path('followers/<int:user_id>/', views.followers_list, name='followers_list'),
     path('user/following_list/<slug:slug>/', views.following_list, name='following_list'),
     path('unfollow_user/<int:user_id>/', views.unfollow_user, name='unfollow_user'),
-
+    path('pets/', include('PetManagement.urls', namespace='PetManagement')),
     path('create-post/', views.create_post, name='create_post'),
     path('edit-post/<int:post_id>/', views.edit_post, name='edit_post'),
     path('delete-post/<int:post_id>/', views.delete_post, name='delete_post'),
     path('post-feed/', views.post_feed, name='post_feed'),
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

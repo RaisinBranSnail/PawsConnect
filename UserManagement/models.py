@@ -161,6 +161,7 @@ class Post(models.Model):
     title = models.CharField(max_length=255)
     content = models.TextField()
     image = models.ImageField(upload_to='posts/', blank=True, null=True)
+    tagged_pets = models.ManyToManyField('PetManagement.Pet', related_name='tagged_posts', blank=True)  # New field
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

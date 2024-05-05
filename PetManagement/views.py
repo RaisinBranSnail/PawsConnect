@@ -124,3 +124,8 @@ def follow_user(request, user_id):
 #     pet = Pet.objects.get(pk=pet_id)
 #     request.user.followed_pets.add(pet)
 #     return redirect('UserManagement:search')  # Redirect to the search page or wherever appropriate
+
+@login_required
+def pet_profile(request, slug):
+    pet = get_object_or_404(Pet, slug=slug)
+    return render(request, 'UserManagement/pet_profile.html', {'pet': pet})

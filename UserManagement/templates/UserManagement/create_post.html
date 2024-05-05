@@ -1,11 +1,90 @@
 {% extends 'UserManagement/base.html' %}
 
 {% block content %}
-<h2>Create Post</h2>
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-primary">Save</button>
-    <a href="{% url 'UserManagement:profile' slug=user.slug %}" class="btn btn-secondary">Cancel</a>
-</form>
+<style>
+    /* Container setup */
+    .form-container {
+        max-width: 600px;
+        margin: auto;
+        padding: 30px;
+        background: #fff;
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        font-family: 'Arial', sans-serif; /* Ensuring font consistency */
+    }
+
+    /* Heading style */
+    .form-container h2 {
+        text-align: center;
+        color: #2c3e50; /* Dark blue shade */
+        margin-bottom: 30px;
+        font-size: 24px;
+    }
+
+    /* Form setup */
+    .form-container form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px; /* Consistent spacing between elements */
+    }
+
+    /* Label styling */
+    .form-container label {
+        color: #7f8c8d; /* Soft grey */
+        font-size: 16px;
+    }
+
+    /* Input and Textarea styling */
+    .form-container input,
+    .form-container textarea {
+        padding: 12px;
+        border: 1px solid #bdc3c7; /* Light grey border */
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    /* Button styling */
+    .form-container .btn {
+        padding: 10px 15px;
+        margin-top: 20px;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 6px;
+        transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+    }
+
+    /* Primary button styles */
+    .form-container .btn-primary {
+        background-color: #3498db; /* Vivid blue */
+        color: #fff;
+        border: 1px solid transparent;
+    }
+
+    .form-container .btn-primary:hover {
+        background-color: #2980b9; /* Darker blue on hover */
+    }
+
+    /* Secondary button styles */
+    .form-container .btn-secondary {
+        background-color: #ecf0f1; /* Very light grey */
+        color: #34495e; /* Dark blue text */
+        border: 1px solid #bdc3c7;
+    }
+
+    .form-container .btn-secondary:hover {
+        background-color: #bdc3c7; /* Medium grey on hover */
+    }
+</style>
+
+<div class="form-container">
+    <h2>Create Post</h2>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="{% url 'UserManagement:profile' slug=request.user.slug %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
 {% endblock %}

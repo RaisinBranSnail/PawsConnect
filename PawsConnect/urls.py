@@ -24,7 +24,7 @@ urlpatterns = [
                   path('admin/', admin.site.urls),
                   path('user/', include('UserManagement.urls', namespace='UserManagement')),
                   path('pet/', include('PetManagement.urls', namespace='PetManagement')),
-
+                  path('pet-management/', include('PetManagement.urls', namespace='PetManagement')),
                   path('content/', include('Content.urls', namespace='content')),
                   path('', lambda request: redirect('UserManagement:login')),
                   path('accounts/', include('allauth.urls')),

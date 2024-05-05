@@ -238,4 +238,16 @@ class EditProfileForm(forms.ModelForm):
 class PostForm(forms.ModelForm):
     class Meta:
         model = Post
-        fields = ['title', 'content', 'image']
+        fields = ['title', 'content', 'image', 'tagged_pets']
+
+    tagged_pets = forms.ModelMultipleChoiceField(
+        queryset=Pet.objects.none(),  # Initialized with none, will be set based on user in __init__
+        widget=forms.CheckboxSelectMultiple,
+        required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super(PostForm, self).__init__(*args, **kwargs)
+        if user:
+            self.fields['tagged_pets'].queryset = Pet.objects.filter(owner=user).distinct()  # Adding distinct()
