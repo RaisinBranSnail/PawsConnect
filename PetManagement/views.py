@@ -92,17 +92,52 @@ def transfer_pet(request, pet_id):
             transfer_request = form.save(commit=False)
             transfer_request.pet = pet
             transfer_request.from_user = request.user
-            # Setting the to_user from the form
-            transfer_request.to_user = form.cleaned_data['to_user']
             transfer_request.save()
-            # Updating the pet's owner
-            pet.owner = transfer_request.to_user
-            pet.save()
+            messages.success(request, "Transfer request sent successfully.")
             return redirect('UserManagement:pets')
+        else:
+            messages.error(request, "There was a problem with the form.")
     else:
         form = TransferPetForm()
 
     return render(request, 'UserManagement/transfer_pet.html', {'form': form, 'pet': pet})
+
+
+@login_required
+def view_transfer_requests(request):
+    transfer_requests = PetTransferRequest.objects.filter(to_user=request.user, status=PetTransferRequest.TransferStatus.PENDING)
+    return render(request, 'UserManagement/view_transfer_requests.html', {'transfer_requests': transfer_requests})
+
+@login_required
+def accept_transfer_request(request, pk):
+    if request.method == 'POST':
+        transfer_request = get_object_or_404(PetTransferRequest, pk=pk, to_user=request.user, status=PetTransferRequest.TransferStatus.PENDING)
+        with transaction.atomic():
+            pet = transfer_request.pet
+            pet.owner = request.user
+            pet.save()
+            transfer_request.status = PetTransferRequest.TransferStatus.APPROVED
+            transfer_request.save()
+            messages.success(request, 'Transfer request accepted.')
+        return redirect('PetManagement:view_transfer_requests')
+    else:
+        messages.error(request, 'Invalid request method.')
+        return redirect('PetManagement:view_transfer_requests')
+
+@login_required
+def reject_transfer_request(request, pk):
+    if request.method == 'POST':
+        transfer_request = get_object_or_404(PetTransferRequest, pk=pk, to_user=request.user, status=PetTransferRequest.TransferStatus.PENDING)
+        with transaction.atomic():
+            transfer_request.status = PetTransferRequest.TransferStatus.REJECTED
+            transfer_request.save()
+            messages.success(request, 'Transfer request rejected.')
+        return redirect('PetManagement:view_transfer_requests')
+    else:
+        messages.error(request, 'Invalid request method.')
+        return redirect('PetManagement:view_transfer_requests')
+
+
 
 
 
@@ -124,8 +159,13 @@ def follow_user(request, user_id):
 #     pet = Pet.objects.get(pk=pet_id)
 #     request.user.followed_pets.add(pet)
 #     return redirect('UserManagement:search')  # Redirect to the search page or wherever appropriate
-
+from PetManagement.models import Pet
+from UserManagement.models import Post
 @login_required
 def pet_profile(request, slug):
     pet = get_object_or_404(Pet, slug=slug)
-    return render(request, 'UserManagement/pet_profile.html', {'pet': pet})
+    posts = Post.objects.filter(tagged_pets=pet)  # Retrieve posts where this pet is tagged
+    return render(request, 'UserManagement/pet_profile.html', {
+        'pet': pet,
+        'posts': posts,
+    })

@@ -134,11 +134,11 @@ def profile(request, slug):
     user = get_object_or_404(CustomUser, slug=slug)
     posts = Post.objects.filter(user=user)
 
-    followers = user.followers.all()  # Access followers from user
-    following = user.followed_users.all()  # Corrected to 'followed_users'
+    followers = user.followers.all()
+    following_users = user.followed_users.all().count()  # count of followed users
+    followed_pets_count = user.followed_pets.count()  # count of followed pets
 
-    # Check if the logged-in user is following the profile's user
-    is_following = user in request.user.followed_users.all() if user != request.user else None
+    total_following = following_users + followed_pets_count  # Total count of following users and pets
 
     pet_data = []
     for pet in user.pets.all():
@@ -156,10 +156,13 @@ def profile(request, slug):
         'user': user,
         'posts': posts,
         'pet_data': pet_data,
-        'is_following': is_following,
-        'followers': followers,
-        'following': following,
+        'total_following': total_following,  # Combined total following count
+        'is_following': user in request.user.followed_users.all(),
+        'followers': followers,  # Using .count() to just send the number
+        'following': following_users,  # Just the count of following users
+        'followed_pets_count': followed_pets_count,  # Count of followed pets
     }
+
     return render(request, 'UserManagement/profile.html', context)
 @login_required
 def edit_profile(request, slug):
@@ -368,23 +371,28 @@ def search(request):
 
 # Follow/following functionality
 
+
 @login_required
 def follow_user(request, user_id):
-    user = get_object_or_404(CustomUser, id=user_id)
-    if request.user == user:
-        return JsonResponse({'success': False, 'error': "You cannot follow yourself."})
-
-    if user in request.user.followed_users.all():
-        request.user.followed_users.remove(user)
-        is_following = False
-    else:
-        request.user.followed_users.add(user)
-        is_following = True
-
-    return JsonResponse({'success': True, 'is_following': is_following})
+    target_user = get_object_or_404(CustomUser, pk=user_id)
+    if request.method == 'POST':
+        if target_user != request.user:
+            if target_user not in request.user.followed_users.all():
+                request.user.followed_users.add(target_user)
+            else:
+                request.user.followed_users.remove(target_user)
+        return redirect(reverse('UserManagement:followers_list', kwargs={'slug': request.user.slug}))
+    return redirect('UserManagement:profile', slug=request.user.slug)
 
 
-
+# views.py
+@login_required
+def unfollow_user(request, user_id):
+    target_user = get_object_or_404(CustomUser, pk=user_id)
+    if request.method == 'POST':
+        if target_user in request.user.followed_users.all():
+            request.user.followed_users.remove(target_user)
+        return redirect(reverse('UserManagement:followers_list', kwargs={'slug': request.user.slug}))
 
 @login_required
 def follow_pet(request, pet_id):
@@ -397,9 +405,10 @@ def follow_pet(request, pet_id):
 
 
 @login_required
-def followers_list(request, user_id):
-    user = get_object_or_404(CustomUser, id=user_id)
-    followers = user.followers.all()
+def followers_list(request, slug):
+    # Fetch user by slug, not by id
+    user = get_object_or_404(CustomUser, slug=slug)
+    followers = user.followers.all()  # Ensure 'followers' is correctly set up in your model
     return render(request, 'UserManagement/followers_list.html', {'user': user, 'followers': followers})
 
 @login_required
@@ -416,17 +425,15 @@ def following_list(request, slug):
     return render(request, 'UserManagement/following_list.html', context)
 
 
-@login_required
-def unfollow_user(request, user_id):
-    user = get_object_or_404(CustomUser, id=user_id)
-    request.user.followed_users.remove(user)  # Corrected to 'followed_users'
-    return JsonResponse({'success': True, 'is_following': False})
+
+
 
 @login_required
 def unfollow_pet(request, pet_id):
     pet = get_object_or_404(Pet, id=pet_id)
     user = request.user
-    user.followed_pets.remove(pet)
+    if pet in user.followed_pets.all():
+        user.followed_pets.remove(pet)
     return redirect('UserManagement:profile', slug=user.slug)
 
 @login_required
@@ -486,3 +493,8 @@ def delete_post(request, post_id):
 def post_feed(request):
     posts = Post.objects.exclude(user=request.user)
     return render(request, 'UserManagement/post_feed.html', {'posts': posts})
+
+def user_pets(request, slug):
+    user = get_object_or_404(User, slug=slug)
+    user_pets = Pet.objects.filter(owner=user)  # Assuming Pet model has an 'owner' field linked to User
+    return render(request, 'UserManagement/pets.html', {'user_pets': user_pets, 'user': user})

@@ -33,7 +33,7 @@ urlpatterns = [
     path('search/', views.search, name='search'),
     path('follow_user/<int:user_id>/', views.follow_user, name='follow_user'),
     path('follow_pet/<int:pet_id>/', views.follow_pet, name='follow_pet'),
-    path('followers/<int:user_id>/', views.followers_list, name='followers_list'),
+    path('followers_list/<slug:slug>/', views.followers_list, name='followers_list'),
     path('user/following_list/<slug:slug>/', views.following_list, name='following_list'),
     path('unfollow_user/<int:user_id>/', views.unfollow_user, name='unfollow_user'),
     path('pets/', include('PetManagement.urls', namespace='PetManagement')),
@@ -41,5 +41,7 @@ urlpatterns = [
     path('edit-post/<int:post_id>/', views.edit_post, name='edit_post'),
     path('delete-post/<int:post_id>/', views.delete_post, name='delete_post'),
     path('post-feed/', views.post_feed, name='post_feed'),
+    path('pets/<slug:slug>/', views.user_pets, name='user_pets'),  # URL to handle user pets
+    path('unfollow_pet/<int:pet_id>/', views.unfollow_pet, name='unfollow_pet'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

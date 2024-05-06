@@ -1,0 +1,58 @@
+{% extends 'UserManagement/base.html' %}
+
+{% block content %}
+<style>
+    body {
+    background-color: #f8f9fa; /* Soft background for light mode */
+    color: #333; /* Dark text for readability */
+    font-family: 'Arial', sans-serif; /* Modern, clean font */
+}
+
+.card {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Subtle shadows for depth */
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth transitions for interaction */
+}
+
+.card:hover {
+    transform: translateY(-5px); /* Slight lift on hover */
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2); /* Increased shadow on hover */
+}
+
+.btn {
+    width: 100%; /* Full-width buttons for a clean look */
+}
+
+</style>
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Pending Pet Transfer Requests</h2>
+    <div class="row">
+        {% for request in transfer_requests %}
+<div class="col-md-6 col-lg-4 mb-3">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">{{ request.pet.name }}</h5>
+            <h6 class="card-subtitle mb-2 text-muted">Requested by: {{ request.from_user.username }}</h6>
+            <p class="card-text">Status: {{ request.get_status_display }}</p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                <form action="{% url 'PetManagement:accept_transfer_request' request.id %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">Accept</button>
+                </form>
+                <form action="{% url 'PetManagement:reject_transfer_request' request.id %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Reject</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="col-12">
+    <p class="text-center">No pending transfer requests.</p>
+</div>
+{% endfor %}
+
+    </div>
+</div>
+{% endblock %}

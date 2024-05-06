@@ -79,7 +79,7 @@
 
     .btn {
         border-radius: 5px;
-        padding: 10px 15px;
+        //padding: 10px 15px;
         background-color: #007BFF;
         color: white;
         border: none;
@@ -217,12 +217,17 @@
             <p>Bio: {{ user.about_me }}</p>
         </div>
         <div class="user-following">
-            <a href="{% url 'UserManagement:followers_list' user.id %}" class="btn btn-outline-secondary">
+            <a href="{% url 'UserManagement:followers_list' slug=user.slug %}" class="btn btn-outline-secondary">
                 Followers: {{ followers.count }}
             </a>
             <a href="{% url 'UserManagement:following_list' user.slug %}" class="btn btn-outline-secondary">
-                Following: {{ following.count }}
+                Following: {{ total_following }}
             </a>
+            <a href="{% url 'UserManagement:user_pets' slug=user.slug %}" class="btn btn-info">Pets</a>
+            {% if request.user == user %}
+            <a href="{% url 'PetManagement:view_transfer_requests' %}" class="btn btn-warning">View Transfer Requests</a>
+            {% endif %}
+
         </div>
     </div>
 </div>

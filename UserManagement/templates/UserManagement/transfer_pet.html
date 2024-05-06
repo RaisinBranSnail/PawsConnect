@@ -8,14 +8,12 @@
             <p>Pet selected to transfer: <strong>{{ pet.name }}</strong></p>
         </div>
         <div class="form-group">
-            <label for="to_user_search">Search for User to Transfer To:</label>
-            <input type="text" id="to_user_search" name="to_user_search" class="form-control" placeholder="Enter username">
-            <button type="button" id="search_user_btn" class="btn btn-secondary">Search</button>
-        </div>
-        <div id="user_info" class="form-group" style="display: none;">
-            <label for="to_user">Transfer to:</label>
+            {{ form.to_user.label_tag }}
             {{ form.to_user }}
-            <p id="user_profile"></p>
+        </div>
+        <div class="form-group">
+            {{ form.message.label_tag }}
+            {{ form.message }}
         </div>
         <button type="submit" class="btn btn-primary">Transfer Pet</button>
         <a href="{% url 'UserManagement:pets' %}" class="btn btn-secondary">Cancel</a>

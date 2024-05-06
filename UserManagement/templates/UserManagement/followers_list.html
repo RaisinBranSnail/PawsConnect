@@ -5,18 +5,20 @@
     <h2>{{ user.username }}'s Followers</h2>
     <ul class="list-group">
         {% for follower in followers %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <img src="{{ follower.profile_picture.url }}" alt="{{ follower.username }}" class="rounded-circle" style="width: 40px; height: 40px;">
-                    <a href="{% url 'UserManagement:profile' slug=follower.slug %}" class="ml-2">{{ follower.username }}</a>
-                </div>
-                <form method="post" action="{% url 'UserManagement:unfollow_user' user_id=follower.id %}" class="m-0">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-danger">Unfollow</button>
-                </form>
-            </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <img src="{{ follower.profile_picture.url }}" alt="{{ follower.username }}" class="rounded-circle" style="width: 40px; height: 40px;">
+                <a href="{% url 'UserManagement:profile' slug=follower.slug %}" class="ml-2">{{ follower.username }}</a>
+            </div>
+            <form method="post" action="{% url 'UserManagement:follow_user' user_id=follower.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn {% if follower in request.user.followed_users.all %}btn-outline-danger{% else %}btn-outline-primary{% endif %}">
+                    {% if follower in request.user.followed_users.all %}Unfollow{% else %}Follow{% endif %}
+                </button>
+            </form>
+        </li>
         {% empty %}
-            <li class="list-group-item">No followers found.</li>
+        <li class="list-group-item">No followers found.</li>
         {% endfor %}
     </ul>
 
