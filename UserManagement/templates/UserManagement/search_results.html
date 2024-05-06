@@ -72,17 +72,19 @@
     <ul>
     {% for user in user_results %}
         <li>
-            <!-- Link to the user's profile -->
-            <a href="{% url 'UserManagement:profile' user.slug %}">
-                {{ user.username }}
-            </a>
-            <button id="follow-btn-{{ user.id }}" data-user-id="{{ user.id }}" class="follow-btn">
-                {% if user in request.user.following.all %}
-                    Following
-                {% else %}
-                    Follow
-                {% endif %}
-            </button>
+            <a href="{% url 'UserManagement:profile' user.slug %}">{{ user.username }}</a>
+            {% if user.is_private %}
+    <button id="follow-btn-{{ user.id }}" data-user-id="{{ user.id }}" data-is-private="true" class="follow-btn">Send Friend Request</button>
+{% else %}
+    <button id="follow-btn-{{ user.id }}" data-user-id="{{ user.id }}" data-is-private="false" class="follow-btn {% if is_following %}btn-secondary{% else %}btn-primary{% endif %}">
+        {% if is_following %}
+            Following
+        {% else %}
+            Follow
+        {% endif %}
+    </button>
+{% endif %}
+
         </li>
     {% empty %}
         <li>No users found.</li>
@@ -92,12 +94,7 @@
     <h3>Pets</h3>
     <ul>
     {% for pet in pet_results %}
-        <li>
-            {{ pet.name }} (Owned by
-            <!-- Link to the pet owner's profile -->
-            <a href="{% url 'UserManagement:profile' pet.owner.username %}">
-                {{ pet.owner.username }}
-            </a>)
+        <li>{{ pet.name }} (Owned by <a href="{% url 'UserManagement:profile' pet.owner.username %}">{{ pet.owner.username }}</a>)
             <a href="{% url 'UserManagement:follow_pet' pet.id %}">Follow</a>
         </li>
     {% empty %}
@@ -107,25 +104,37 @@
 </div>
 
 <script>
-document.querySelectorAll(".follow-btn").forEach(button => {
-    button.addEventListener("click", function() {
-        var userId = this.getAttribute("data-user-id");
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll(".follow-btn").forEach(button => {
+        button.addEventListener("click", function(event) {
+            event.preventDefault();
+            var userId = this.getAttribute("data-user-id");
+            var button = this;
 
-        fetch(`/user/follow_user/${userId}/`)
+            fetch(`/user/follow_user/${userId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ user_id: userId })
+            })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    if (data.is_following) {
-                        this.textContent = "Following";
-                    } else {
-                        this.textContent = "Follow";
-                    }
+                    button.textContent = button.dataset.isPrivate === "true" ? "Request Sent" : "Following";
+                    button.disabled = true;
                 } else {
-                    alert(data.error || "An error occurred");
+                    alert(data.message || "An error occurred");
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error);
             });
+        });
     });
 });
 </script>
+
 
 {% endblock %}

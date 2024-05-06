@@ -217,25 +217,20 @@
             <p>Bio: {{ user.about_me }}</p>
         </div>
         <div class="user-following">
-            <a href="{% url 'UserManagement:followers_list' slug=user.slug %}" class="btn btn-outline-secondary">
-                Followers: {{ followers.count }}
-            </a>
-            <a href="{% url 'UserManagement:following_list' user.slug %}" class="btn btn-outline-secondary">
-                Following: {{ total_following }}
-            </a>
+            <a href="{% url 'UserManagement:followers_list' user.slug %}" class="btn btn-outline-secondary">Followers: {{ followers.count }}</a>
+            <a href="{% url 'UserManagement:following_list' user.slug %}" class="btn btn-outline-secondary">Following: {{ total_following }}</a>
             <a href="{% url 'UserManagement:user_pets' slug=user.slug %}" class="btn btn-info">Pets</a>
             {% if request.user == user %}
             <a href="{% url 'PetManagement:view_transfer_requests' %}" class="btn btn-warning">View Transfer Requests</a>
+            <a href="{% url 'UserManagement:friend_requests' user.slug %}" class="btn btn-warning">Check Friend Requests</a>
             {% endif %}
-
+            {% if user.is_private and not is_friend and not has_pending_request %}
+                <form action="{% url 'UserManagement:send_friend_request' user.id %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">Send Friend Request</button>
+                </form>
+            {% endif %}
         </div>
-    </div>
-</div>
-
-<div id="postModal" class="modal">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-        <div class="modal-body"></div>
     </div>
 </div>
 
@@ -243,7 +238,7 @@
 <div class="user-actions">
     <a href="{% url 'UserManagement:edit_profile' slug=user.slug %}" class="btn btn-primary">Edit Profile</a>
     <a href="{% url 'UserManagement:create_post' %}" class="btn btn-primary">Create Post</a>
-    <a href="{% url 'UserManagement:pets' %}" class="btn btn-info">Pets</a> <!-- Ensure this URL is correct -->
+    <a href="{% url 'UserManagement:pets' %}" class="btn btn-info">Pets</a>
     <a href="{% url 'UserManagement:post_feed' %}" class="btn btn-info">Feed</a>
 </div>
 {% endif %}
@@ -259,23 +254,23 @@
 {% endif %}
 
 {% if posts %}
-    <div class="posts-grid">
-        {% for post in posts %}
-        <div class="post" style="background-image: url('{{ post.image.url }}');" onclick="openModal('{{ post.image.url }}', '{{ post.caption }}', '{{ post.created_at|date:"M d, Y" }}')">
-            <div class="post-overlay">
-                <p>{{ post.caption }}</p>
-                {% if request.user == user %}
-                <div class="post-actions">
-                    <button class="btn-edit" onclick="window.location.href='{% url 'UserManagement:edit_post' post.id %}'">Edit</button>
-                    <button class="btn-delete" onclick="deletePost({{ post.id }})">Delete</button>
-                </div>
-                {% endif %}
+<div class="posts-grid">
+    {% for post in posts %}
+    <div class="post" style="background-image: url('{{ post.image.url }}');" onclick="openModal('{{ post.image.url }}', '{{ post.caption }}', '{{ post.created_at|date:"M d, Y" }}')">
+        <div class="post-overlay">
+            <p>{{ post.caption }}</p>
+            {% if request.user == user %}
+            <div class="post-actions">
+                <button class="btn-edit" onclick="window.location.href='{% url 'UserManagement:edit_post' post.id %}'">Edit</button>
+                <button class="btn-delete" onclick="deletePost({{ post.id }})">Delete</button>
             </div>
+            {% endif %}
         </div>
-        {% endfor %}
     </div>
+    {% endfor %}
+</div>
 {% else %}
-    <p>No posts available.</p>
+<p>No posts available.</p>
 {% endif %}
 
 

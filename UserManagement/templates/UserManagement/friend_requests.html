@@ -1,0 +1,14 @@
+{% extends 'UserManagement/base.html' %}
+{% block content %}
+<h2>Friend Requests for {{ user.display_name }}</h2>
+<ul>
+    {% for request in incoming_requests %}
+    <li>{{ request.user_from.display_name }} -
+        <a href="{% url 'UserManagement:accept_friend_request' request.id %}">Accept</a> |
+        <a href="{% url 'UserManagement:reject_friend_request' request.id %}">Reject</a>
+    </li>
+    {% empty %}
+    <li>No friend requests.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

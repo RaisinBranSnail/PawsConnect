@@ -32,6 +32,11 @@ from PetManagement.models import Pet  # Adjust this import according to the actu
 from UserManagement.models import CustomUser, UserProfile
 from .models import Post
 from .forms import PostForm
+from django.contrib import messages
+from django import template
+
+
+register = template.Library()
 
 User = get_user_model()
 
@@ -133,11 +138,12 @@ class CustomLogoutView(LogoutView):
 def profile(request, slug):
     user = get_object_or_404(CustomUser, slug=slug)
     posts = Post.objects.filter(user=user)
-
+    show_friend_request_button = user.is_private and not request.user in user.followers.all()
     followers = user.followers.all()
     following_users = user.followed_users.all().count()  # count of followed users
     followed_pets_count = user.followed_pets.count()  # count of followed pets
 
+    has_pending_request = Friendship.objects.filter(user_from=user, user_to=request.user, status='pending').exists()
     total_following = following_users + followed_pets_count  # Total count of following users and pets
 
     pet_data = []
@@ -155,12 +161,15 @@ def profile(request, slug):
     context = {
         'user': user,
         'posts': posts,
+        'has_pending_request': has_pending_request,
+        'show_friend_request_button': show_friend_request_button,
         'pet_data': pet_data,
         'total_following': total_following,  # Combined total following count
         'is_following': user in request.user.followed_users.all(),
         'followers': followers,  # Using .count() to just send the number
         'following': following_users,  # Just the count of following users
         'followed_pets_count': followed_pets_count,  # Count of followed pets
+
     }
 
     return render(request, 'UserManagement/profile.html', context)
@@ -366,25 +375,72 @@ def search(request):
     return render(request, 'UserManagement/search_results.html', context)
 
 
+@login_required
+def send_friend_request(request, user_id):
+    if request.method == 'POST':
+        target_user = get_object_or_404(CustomUser, pk=user_id)
+        if not Friendship.objects.filter(user_from=request.user, user_to=target_user).exists():
+            Friendship.objects.create(user_from=request.user, user_to=target_user)
+            return JsonResponse({'success': True}, status=200)
+        return JsonResponse({'error': 'Request already sent'}, status=400)
+    return JsonResponse({'error': 'Invalid method'}, status=405)
+
+@login_required
+def friend_requests(request, slug):
+    user = get_object_or_404(CustomUser, slug=slug)
+    incoming_requests = Friendship.objects.filter(user_to=user, status='pending')
+    context = {
+        'incoming_requests': incoming_requests,
+        'user': user,
+    }
+    return render(request, 'UserManagement/friend_requests.html', context)
 
 
+def has_pending_request_from(user, other_user):
+    return Friendship.objects.filter(user_from=other_user, user_to=user, status='pending').exists()
 
-# Follow/following functionality
 
 
 @login_required
+def accept_friend_request(request, request_id):
+    friendship = get_object_or_404(Friendship, id=request_id, user_to=request.user, status='pending')
+    friendship.status = 'accepted'
+    friendship.save()
+    return redirect('UserManagement:friend_requests', slug=request.user.slug)
+
+@login_required
+def reject_friend_request(request, request_id):
+    friendship = get_object_or_404(Friendship, id=request_id, user_to=request.user, status='pending')
+    friendship.status = 'declined'
+    friendship.delete()  # or change status to 'declined' based on your model design
+    return redirect('UserManagement:friend_requests', slug=request.user.slug)
+# Follow/following functionality
+
+
+from django.views.decorators.csrf import csrf_exempt
+
+@login_required
 def follow_user(request, user_id):
-    target_user = get_object_or_404(CustomUser, pk=user_id)
     if request.method == 'POST':
-        if target_user != request.user:
+        target_user = get_object_or_404(CustomUser, pk=user_id)
+        if target_user.profile_visibility == 'private':
+            # Handle friend request logic
+            if not Friendship.objects.filter(user_from=request.user, user_to=target_user, status='pending').exists():
+                Friendship.objects.create(user_from=request.user, user_to=target_user, status='pending')
+                return JsonResponse({'success': True, 'message': 'Friend request sent'})
+            else:
+                return JsonResponse({'success': False, 'message': 'Friend request already sent'})
+        elif target_user != request.user:
+            # Normal follow logic for public profiles
             if target_user not in request.user.followed_users.all():
                 request.user.followed_users.add(target_user)
+                return JsonResponse({'success': True, 'is_following': True})
             else:
                 request.user.followed_users.remove(target_user)
-        return redirect(reverse('UserManagement:followers_list', kwargs={'slug': request.user.slug}))
-    return redirect('UserManagement:profile', slug=request.user.slug)
-
-
+                return JsonResponse({'success': True, 'is_following': False})
+        else:
+            return JsonResponse({'success': False, 'message': "Cannot follow yourself"}, status=400)
+    return JsonResponse({'success': False, 'message': "Invalid request"}, status=400)
 # views.py
 @login_required
 def unfollow_user(request, user_id):
@@ -423,6 +479,19 @@ def following_list(request, slug):
         'following_pets': following_pets
     }
     return render(request, 'UserManagement/following_list.html', context)
+
+def friendship_status(request):
+    if request.user.is_authenticated:
+        # Example: You can modify according to actual use case
+        pending_requests = Friendship.objects.filter(user_to=request.user, status='pending').count()
+        return {
+            'pending_friend_requests_count': pending_requests,
+        }
+    return {}
+
+
+
+
 
 
 

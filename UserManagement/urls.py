@@ -43,5 +43,10 @@ urlpatterns = [
     path('post-feed/', views.post_feed, name='post_feed'),
     path('pets/<slug:slug>/', views.user_pets, name='user_pets'),  # URL to handle user pets
     path('unfollow_pet/<int:pet_id>/', views.unfollow_pet, name='unfollow_pet'),
+    path('send-friend-request/<int:user_id>/', views.send_friend_request, name='send_friend_request'),
+    path('friend_requests/<slug:slug>/', views.friend_requests, name='friend_requests'),
+
+    path('accept-friend-request/<int:request_id>/', views.accept_friend_request, name='accept_friend_request'),
+    path('reject-friend-request/<int:request_id>/', views.reject_friend_request, name='reject_friend_request'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
