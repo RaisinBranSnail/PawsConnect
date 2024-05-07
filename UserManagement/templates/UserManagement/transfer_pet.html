@@ -11,10 +11,7 @@
             {{ form.to_user.label_tag }}
             {{ form.to_user }}
         </div>
-        <div class="form-group">
-            {{ form.message.label_tag }}
-            {{ form.message }}
-        </div>
+
         <button type="submit" class="btn btn-primary">Transfer Pet</button>
         <a href="{% url 'UserManagement:pets' %}" class="btn btn-secondary">Cancel</a>
     </form>

@@ -7,12 +7,10 @@
         background-color: #fafafa;
         color: #333;
     }
-
     h2 {
         text-align: center;
         margin: 20px 0;
     }
-
     .results {
         width: 80%;
         margin: 0 auto;
@@ -21,36 +19,29 @@
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         border-radius: 10px;
     }
-
     h3 {
         color: #555;
         border-bottom: 1px solid #eee;
         padding-bottom: 10px;
     }
-
     ul {
         list-style-type: none;
         padding: 0;
     }
-
     li {
         padding: 10px;
         border-bottom: 1px solid #eee;
     }
-
     li:last-child {
         border-bottom: none;
     }
-
     a {
         color: #007bff;
         text-decoration: none;
     }
-
     a:hover {
         text-decoration: underline;
     }
-
     .follow-btn {
         padding: 5px 10px;
         color: white;
@@ -59,32 +50,46 @@
         border-radius: 5px;
         cursor: pointer;
     }
-
     .follow-btn:hover {
         background-color: #0056b3;
     }
+    .messages {
+        width: 80%;
+        margin: 0 auto 20px;
+        padding: 10px;
+        color: #d00;
+        background-color: #fdd;
+        border: 1px solid #d88;
+        border-radius: 5px;
+        text-align: center;
+    }
 </style>
 
-<h2>Search Results for "{{ query }}"</h2>
+{% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    </div>
+{% endif %}
 
+<h2>Search Results for "{{ query }}"</h2>
 <div class="results">
     <h3>Users</h3>
     <ul>
     {% for user in user_results %}
         <li>
             <a href="{% url 'UserManagement:profile' user.slug %}">{{ user.username }}</a>
-            {% if user.is_private %}
-    <button id="follow-btn-{{ user.id }}" data-user-id="{{ user.id }}" data-is-private="true" class="follow-btn">Send Friend Request</button>
-{% else %}
-    <button id="follow-btn-{{ user.id }}" data-user-id="{{ user.id }}" data-is-private="false" class="follow-btn {% if is_following %}btn-secondary{% else %}btn-primary{% endif %}">
-        {% if is_following %}
-            Following
-        {% else %}
-            Follow
-        {% endif %}
-    </button>
-{% endif %}
-
+            <form method="post" action="{% url 'UserManagement:follow_user' user_id=user.id %}">
+                {% csrf_token %}
+                <button type="submit" class="follow-btn {% if user in request.user.followed_users.all %}btn-secondary{% else %}btn-primary{% endif %}">
+                    {% if user in request.user.followed_users.all %}
+                        Unfollow
+                    {% else %}
+                        Follow
+                    {% endif %}
+                </button>
+            </form>
         </li>
     {% empty %}
         <li>No users found.</li>
@@ -95,46 +100,14 @@
     <ul>
     {% for pet in pet_results %}
         <li>{{ pet.name }} (Owned by <a href="{% url 'UserManagement:profile' pet.owner.username %}">{{ pet.owner.username }}</a>)
-            <a href="{% url 'UserManagement:follow_pet' pet.id %}">Follow</a>
+            <form method="post" action="{% url 'UserManagement:follow_pet' pet_id=pet.id %}">
+                {% csrf_token %}
+                <button type="submit" class="follow-btn">Follow</button>
+            </form>
         </li>
     {% empty %}
         <li>No pets found.</li>
     {% endfor %}
     </ul>
 </div>
-
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    document.querySelectorAll(".follow-btn").forEach(button => {
-        button.addEventListener("click", function(event) {
-            event.preventDefault();
-            var userId = this.getAttribute("data-user-id");
-            var button = this;
-
-            fetch(`/user/follow_user/${userId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ user_id: userId })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    button.textContent = button.dataset.isPrivate === "true" ? "Request Sent" : "Following";
-                    button.disabled = true;
-                } else {
-                    alert(data.message || "An error occurred");
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        });
-    });
-});
-</script>
-
-
 {% endblock %}

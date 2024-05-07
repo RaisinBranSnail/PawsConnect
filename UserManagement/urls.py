@@ -30,7 +30,6 @@ urlpatterns = [
     path('edit_pet_profile/<slug:pet_slug>/', views.edit_pet_profile, name='edit_pet_profile'),
     path('pet_management/', include('PetManagement.urls')),  # Include PetManagement URLs
     path('search_profile/', views.search_profile, name='search_profile'),
-    path('search/', views.search, name='search'),
     path('follow_user/<int:user_id>/', views.follow_user, name='follow_user'),
     path('follow_pet/<int:pet_id>/', views.follow_pet, name='follow_pet'),
     path('followers_list/<slug:slug>/', views.followers_list, name='followers_list'),
@@ -45,8 +44,8 @@ urlpatterns = [
     path('unfollow_pet/<int:pet_id>/', views.unfollow_pet, name='unfollow_pet'),
     path('send-friend-request/<int:user_id>/', views.send_friend_request, name='send_friend_request'),
     path('friend_requests/<slug:slug>/', views.friend_requests, name='friend_requests'),
-
+    path('user/follow_user/<int:user_id>/', views.follow_user, name='follow_user'),
     path('accept-friend-request/<int:request_id>/', views.accept_friend_request, name='accept_friend_request'),
     path('reject-friend-request/<int:request_id>/', views.reject_friend_request, name='reject_friend_request'),
-
+    path('unfollow_user/<int:user_id>/', views.unfollow_user, name='unfollow_user'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

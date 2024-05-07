@@ -28,6 +28,7 @@
 
     .user-details {
         flex-grow: 1;
+        text-align: center;
     }
 
     .user-following {
@@ -77,17 +78,34 @@
         opacity: 1;
     }
 
-    .btn {
+    .btn, .btn-edit, .btn-delete {
         border-radius: 5px;
-        //padding: 10px 15px;
+        padding: 5px 10px;
         background-color: #007BFF;
         color: white;
         border: none;
+        cursor: pointer;
         text-decoration: none;
     }
 
-    .btn:hover {
+    .btn:hover, .btn-edit:hover, .btn-delete:hover {
         background-color: #0056b3;
+    }
+
+    .btn-edit {
+        background-color: #f1c40f; /* Gold */
+    }
+
+    .btn-edit:hover {
+        background-color: #d4ac0d; /* Darker gold */
+    }
+
+    .btn-delete {
+        background-color: #e74c3c; /* Red */
+    }
+
+    .btn-delete:hover {
+        background-color: #c0392b; /* Darker red */
     }
 
     img.profile-pic {
@@ -99,22 +117,20 @@
         margin-left: 76px;
     }
 
-    .user-details {
-        text-align: center;
-    }
-
     /* Modal styling */
+
     .modal {
         position: fixed;
-        top: 0;
-        left: 0;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         width: 100%;
         height: 100%;
-        background-color: rgba(0, 0, 0, 0.8);
-        z-index: 1050;
         display: none;
         align-items: center;
         justify-content: center;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 1050;
     }
 
     .modal-content {
@@ -126,7 +142,8 @@
     }
 
     .modal-body {
-        margin: 15px 0;
+        padding: 20px;
+        color: #2c3e50;
     }
 
     .close {
@@ -135,80 +152,11 @@
         font-weight: bold;
         cursor: pointer;
     }
-        .post-actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 10px;
-    }
-
-    .btn-edit, .btn-delete {
-        border: none;
-        padding: 5px 10px;
-        border-radius: 5px;
-        color: white;
-        cursor: pointer;
-    }
-
-    .btn-edit {
-        background-color: #f1c40f; /* Gold */
-    }
-
-    .btn-edit:hover {
-        background-color: #d4ac0d; /* Darker gold */
-    }
-
-    .btn-delete {
-        background-color: #e74c3c; /* Red */
-    }
-
-    .btn-delete:hover {
-        background-color: #c0392b; /* Darker red */
-    }
-
-    /* Modal adjustments */
-    .modal-body {
-        padding: 20px;
-        color: #2c3e50;
-    }
-        .post-actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 10px;
-    }
-
-    .btn-edit, .btn-delete {
-        border: none;
-        padding: 5px 10px;
-        border-radius: 5px;
-        color: white;
-        cursor: pointer;
-    }
-
-    .btn-edit {
-        background-color: #f1c40f; /* Gold */
-    }
-
-    .btn-edit:hover {
-        background-color: #d4ac0d; /* Darker gold */
-    }
-
-    .btn-delete {
-        background-color: #e74c3c; /* Red */
-    }
-
-    .btn-delete:hover {
-        background-color: #c0392b; /* Darker red */
-    }
-
-    /* Modal adjustments */
-    .modal-body {
-        padding: 20px;
-        color: #2c3e50;
-    }
 </style>
 
 <div class="profile-header">
-    <img src="{{ user.profile_picture.url }}" alt="{{ user.display_name }}'s Profile Picture" class="profile-pic">
+
+    <img src="{% if user.profile_picture %}{{ user.profile_picture.url }}{% else %}{% static 'images/default.jpg' %}{% endif %}" alt="{{ user.display_name }}'s Profile Picture" class="profile-pic">
     <div class="profile-info">
         <div class="user-details">
             <h1>{{ user.display_name }}'s Profile</h1>
@@ -217,12 +165,17 @@
             <p>Bio: {{ user.about_me }}</p>
         </div>
         <div class="user-following">
-            <a href="{% url 'UserManagement:followers_list' user.slug %}" class="btn btn-outline-secondary">Followers: {{ followers.count }}</a>
-            <a href="{% url 'UserManagement:following_list' user.slug %}" class="btn btn-outline-secondary">Following: {{ total_following }}</a>
+            <a href="{% url 'UserManagement:followers_list' user.slug %}" id="follower-count" class="btn btn-outline-secondary">
+                Followers: {{ followers.count }}
+            </a>
+
+            <a href="{% url 'UserManagement:following_list' user.slug %}" class="btn btn-outline-secondary" id="following-count">
+                Following: {{ total_following }}
+            </a>
+
             <a href="{% url 'UserManagement:user_pets' slug=user.slug %}" class="btn btn-info">Pets</a>
             {% if request.user == user %}
             <a href="{% url 'PetManagement:view_transfer_requests' %}" class="btn btn-warning">View Transfer Requests</a>
-            <a href="{% url 'UserManagement:friend_requests' user.slug %}" class="btn btn-warning">Check Friend Requests</a>
             {% endif %}
             {% if user.is_private and not is_friend and not has_pending_request %}
                 <form action="{% url 'UserManagement:send_friend_request' user.id %}" method="post">
@@ -241,16 +194,6 @@
     <a href="{% url 'UserManagement:pets' %}" class="btn btn-info">Pets</a>
     <a href="{% url 'UserManagement:post_feed' %}" class="btn btn-info">Feed</a>
 </div>
-{% endif %}
-
-{% if request.user != user %}
-<button id="follow-btn" data-user-id="{{ user.id }}" class="btn {% if is_following %}btn-secondary{% else %}btn-primary{% endif %}">
-    {% if is_following %}
-        Following
-    {% else %}
-        Follow
-    {% endif %}
-</button>
 {% endif %}
 
 {% if posts %}
@@ -272,23 +215,41 @@
 {% else %}
 <p>No posts available.</p>
 {% endif %}
-
-
+<div id="profileModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <div class="modal-body">
+        </div>
+    </div>
+</div>
 <script>
-function openModal(imageUrl, caption, date) {
-    var modal = document.getElementById('postModal');
-    var modalBody = modal.querySelector('.modal-body');
-    modal.style.display = 'flex';
+document.addEventListener("DOMContentLoaded", function() {
+    var modal = document.getElementById('profileModal');
+    var span = document.getElementsByClassName("close")[0];
 
-    modalBody.innerHTML = `
-        <img src="${imageUrl}" alt="Post Image" style="width:100%; height:auto;">
-        <p><strong>Caption:</strong> ${caption}</p>
-        <p><strong>Date:</strong> ${date}</p>
-    `;
-
-    modal.querySelector('.close').onclick = function() {
+    span.onclick = function() {
         modal.style.display = "none";
     }
+
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+});
+
+function openModal(imageUrl, caption, date) {
+    var modal = document.getElementById('profileModal');
+    modal.style.display = "block";
+    modal.querySelector('.modal-body').innerHTML = `
+        <img src="${imageUrl}" alt="Post Image" style="width:100%; height:auto;">
+        <p><strong>Date:</strong> ${date}</p>
+    `;
+}
+
+function closeModal() {
+    var modal = document.getElementById('profileModal');
+    modal.style.display = "none";
 }
 
 function deletePost(postId) {
@@ -308,8 +269,9 @@ function deletePost(postId) {
                   alert('Error deleting post.');
               }
           });
+        event.stopPropagation(); // Prevent modal from opening
     }
-    event.stopPropagation(); // Prevent modal from opening
 }
 </script>
+
 {% endblock %}

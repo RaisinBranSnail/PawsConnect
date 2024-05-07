@@ -71,6 +71,7 @@ def user_login(request):
     else:
         form = CustomLoginForm()
         return render(request, 'UserManagement/login.html', {'form': form})
+
 def home(request):
     if request.user.is_authenticated:
         return redirect('UserManagement:profile', slug=request.user.slug)
@@ -82,7 +83,6 @@ from django.contrib.auth import login, authenticate
 
 def register(request):
     user_form = UserRegistrationForm(request.POST or None, request.FILES or None)
-    pet_formset = PetFormSet(request.POST or None, request.FILES or None, instance=None)
 
     if request.method == 'POST' and user_form.is_valid():
         user = user_form.save(commit=False)
@@ -90,15 +90,12 @@ def register(request):
         user.backend = 'django.contrib.auth.backends.ModelBackend'  # Specify the backend
         login(request, user)  # Log the user in immediately after registration
 
-        if pet_formset.is_bound and pet_formset.is_valid():
-            pet_formset.instance = user
-            pet_formset.save()
+
 
         return redirect('UserManagement:profile', slug=user.slug)  # Redirect to the user's profile
 
     return render(request, 'UserManagement/register.html', {
         'user_form': user_form,
-        'pet_formset': pet_formset
     })
 
 
@@ -137,10 +134,12 @@ class CustomLogoutView(LogoutView):
 @profile_completion_required
 def profile(request, slug):
     user = get_object_or_404(CustomUser, slug=slug)
+    followers_count = user.followers.count()  # Fetches the number of followers
     posts = Post.objects.filter(user=user)
     show_friend_request_button = user.is_private and not request.user in user.followers.all()
     followers = user.followers.all()
     following_users = user.followed_users.all().count()  # count of followed users
+
     followed_pets_count = user.followed_pets.count()  # count of followed pets
 
     has_pending_request = Friendship.objects.filter(user_from=user, user_to=request.user, status='pending').exists()
@@ -167,7 +166,9 @@ def profile(request, slug):
         'total_following': total_following,  # Combined total following count
         'is_following': user in request.user.followed_users.all(),
         'followers': followers,  # Using .count() to just send the number
+        'followers_count': followers_count,
         'following': following_users,  # Just the count of following users
+
         'followed_pets_count': followed_pets_count,  # Count of followed pets
 
     }
@@ -377,13 +378,17 @@ def search(request):
 
 @login_required
 def send_friend_request(request, user_id):
-    if request.method == 'POST':
-        target_user = get_object_or_404(CustomUser, pk=user_id)
-        if not Friendship.objects.filter(user_from=request.user, user_to=target_user).exists():
-            Friendship.objects.create(user_from=request.user, user_to=target_user)
-            return JsonResponse({'success': True}, status=200)
-        return JsonResponse({'error': 'Request already sent'}, status=400)
-    return JsonResponse({'error': 'Invalid method'}, status=405)
+    target_user = get_object_or_404(CustomUser, pk=user_id)
+    if request.user == target_user:
+        return JsonResponse({'error': 'Cannot send friend request to yourself'}, status=400)
+
+    # Check if the friendship already exists
+    if Friendship.objects.filter(user_from=request.user, user_to=target_user).exists():
+        return JsonResponse({'error': 'Friend request already sent'}, status=400)
+
+    # Since the friendship doesn't exist, create it
+    Friendship.objects.create(user_from=request.user, user_to=target_user)
+    return JsonResponse({'success': True}, status=200)
 
 @login_required
 def friend_requests(request, slug):
@@ -419,36 +424,13 @@ def reject_friend_request(request, request_id):
 
 from django.views.decorators.csrf import csrf_exempt
 
-@login_required
-def follow_user(request, user_id):
-    if request.method == 'POST':
-        target_user = get_object_or_404(CustomUser, pk=user_id)
-        if target_user.profile_visibility == 'private':
-            # Handle friend request logic
-            if not Friendship.objects.filter(user_from=request.user, user_to=target_user, status='pending').exists():
-                Friendship.objects.create(user_from=request.user, user_to=target_user, status='pending')
-                return JsonResponse({'success': True, 'message': 'Friend request sent'})
-            else:
-                return JsonResponse({'success': False, 'message': 'Friend request already sent'})
-        elif target_user != request.user:
-            # Normal follow logic for public profiles
-            if target_user not in request.user.followed_users.all():
-                request.user.followed_users.add(target_user)
-                return JsonResponse({'success': True, 'is_following': True})
-            else:
-                request.user.followed_users.remove(target_user)
-                return JsonResponse({'success': True, 'is_following': False})
-        else:
-            return JsonResponse({'success': False, 'message': "Cannot follow yourself"}, status=400)
-    return JsonResponse({'success': False, 'message': "Invalid request"}, status=400)
+
 # views.py
-@login_required
-def unfollow_user(request, user_id):
-    target_user = get_object_or_404(CustomUser, pk=user_id)
-    if request.method == 'POST':
-        if target_user in request.user.followed_users.all():
-            request.user.followed_users.remove(target_user)
-        return redirect(reverse('UserManagement:followers_list', kwargs={'slug': request.user.slug}))
+import json
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST, require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
 
 @login_required
 def follow_pet(request, pet_id):
@@ -493,8 +475,27 @@ def friendship_status(request):
 
 
 
-
-
+@login_required
+def follow_user(request, user_id):
+    target_user = get_object_or_404(CustomUser, pk=user_id)
+    if request.method == 'POST':
+        if target_user != request.user:
+            if target_user not in request.user.followed_users.all():
+                request.user.followed_users.add(target_user)
+            else:
+                request.user.followed_users.remove(target_user)
+        # Redirect back to the same page
+        return redirect(request.META.get('HTTP_REFERER', 'default_fallback_view_name'))
+    return redirect('UserManagement:profile', slug=request.user.slug)
+@login_required
+def unfollow_user(request, user_id):
+    target_user = get_object_or_404(CustomUser, pk=user_id)
+    if request.method == 'POST':
+        if target_user in request.user.followed_users.all():
+            request.user.followed_users.remove(target_user)
+        # Redirect back to the same page
+        return redirect(request.META.get('HTTP_REFERER', 'default_fallback_view_name'))
+    return redirect('UserManagement:profile', slug=request.user.slug)
 
 
 @login_required

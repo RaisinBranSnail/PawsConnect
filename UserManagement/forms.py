@@ -154,19 +154,16 @@ class PetEditForm(forms.ModelForm):
 
 
 class UserCompletionForm(forms.ModelForm):
-    about_me = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control'}), required=False)
 
     class Meta:
         model = CustomUser
-        fields = ['display_name', 'city', 'state', 'zip_code', 'preferred_language', 'profile_picture', 'has_pets']
+        fields = ['display_name', 'city', 'state', 'zip_code', 'preferred_language' ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['about_me'].initial = self.instance.profile.about_me
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.profile.about_me = self.cleaned_data['about_me']
         user.profile_incomplete = False
         if commit:
             user.save()
